@@ -1022,15 +1022,24 @@
 
      (defn- jolt-pending? [e] (and (map? e) (contains? e ::pending)))
 
-     (defn- jolt-compile! [k e ns-str used-locals possible-params]
+     (defn- jolt-compile!
+       "Compiles call site k from a fresh run of prepare-thunk, so the
+        compiled path sees what the uncached calls before it saw, never a
+        snapshot from the first call."
+       [k prepare-thunk ns-str used-locals possible-params]
        (try
-         (jolt-cache-put! k (->CachedPathInfo
-                             true
-                             (mk-dynamic-path-maker
-                              (resolve-nav-code (->DynamicPath (::magic e)) possible-params)
-                              ns-str used-locals possible-params)))
-         (catch Throwable _
+         (let [m (-> (prepare-thunk) magic-precompilation* static-combine)]
+           (jolt-cache-put! k (if (rich-nav? m)
+                                (->CachedPathInfo false m)
+                                (->CachedPathInfo
+                                 true
+                                 (mk-dynamic-path-maker
+                                  (resolve-nav-code (->DynamicPath m) possible-params)
+                                  ns-str used-locals possible-params)))))
+         (catch Throwable t
            ;; stay on the uncached route for good; never retry on every call
+           (when *DEBUG-INLINE-CACHING*
+             (println "Path compile failed, staying uncached:" k (.getMessage t)))
            (swap! jolt-path-cache assoc k ::uncached)
            nil)))
 
@@ -1038,7 +1047,7 @@
        "The cached path for call site k, or nil when this call should take
         the uncached route. Static paths are cached on the first call;
         dynamic ones after jolt-compile-after calls. prepare-thunk builds the
-        prepared path and runs only on the first call."
+        prepared path; it runs on the first call and again at the compile."
        [k prepare-thunk ns-str used-locals possible-params]
        (let [e (get @jolt-path-cache k)]
          (cond
@@ -1048,7 +1057,7 @@
            (let [m (-> (prepare-thunk) magic-precompilation* static-combine)]
              (if (rich-nav? m)
                (jolt-cache-put! k (->CachedPathInfo false m))
-               (do (swap! jolt-path-cache assoc k {::pending 1 ::magic m})
+               (do (swap! jolt-path-cache assoc k {::pending 1})
                    nil)))
            :else
            (let [cur (get (swap! jolt-path-cache update k
@@ -1057,7 +1066,7 @@
              (cond
                (instance? CachedPathInfo cur) cur
                (and (jolt-pending? cur) (>= (::pending cur) jolt-compile-after))
-               (jolt-compile! k cur ns-str used-locals possible-params)
+               (jolt-compile! k prepare-thunk ns-str used-locals possible-params)
                :else nil)))))))
 
 

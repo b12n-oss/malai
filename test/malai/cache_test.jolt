@@ -128,3 +128,26 @@
     (m/clear-path-cache!)
     (is (= [100 200] (helper-site)) "after clear-path-cache! the new fn is used")
     (finally (alter-var-root #'helper (constantly (fn [x] (* x 10)))))))
+
+(defn helper2 [x] (* x 10))
+(defn- dyn-helper-site [k] (s/select [(s/keypath k) s/ALL (s/view helper2)] {:v [1 2]}))
+
+(deftest redefinition-at-a-dynamic-site-never-reverts
+  ;; a dynamic site must not compile from what it saw on call 1: once calls
+  ;; have picked up a redefinition, the compiled path keeps it
+  (reset! i/jolt-path-cache {})
+  (is (= [10 20] (dyn-helper-site :v)))
+  (alter-var-root #'helper2 (constantly (fn [x] (* x 100))))
+  (try
+    (is (every? #{[100 200]} (repeatedly 299 #(dyn-helper-site :v))))
+    (is (= 1 (compiled-dynamic)) "it did compile")
+    (finally (alter-var-root #'helper2 (constantly (fn [x] (* x 10)))))))
+
+(deftest compile-failure-is-visible-when-debugging
+  (reset! i/jolt-path-cache {})
+  (let [out (with-out-str
+              (binding [i/*DEBUG-INLINE-CACHING* true]
+                (with-redefs [i/mk-dynamic-path-maker (fn [& _] (throw (ex-info "boom" {})))]
+                  (dotimes [_ 300] (kp :a)))))]
+    (is (re-find #"staying uncached" out))
+    (is (re-find #"boom" out))))
