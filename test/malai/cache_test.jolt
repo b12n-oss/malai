@@ -163,3 +163,14 @@
   (is (= (str "malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. "
               "This Jolt (v0.8.26) is missing: #1612, #1615.")
          (i/jolt-missing-fixes-message ["#1612" "#1615"] "v0.8.26"))))
+
+(deftest missing-fixes-error-also-goes-to-stderr
+  ;; Jolt's REPL shows only the wrapping load error, not its cause, so the
+  ;; check prints its message to stderr before throwing
+  (let [err (java.io.StringWriter.)
+        thrown (binding [*err* err]
+                 (try (i/jolt-fail-missing-fixes! ["#1612"] "v0.8.26") nil
+                      (catch Exception e e)))]
+    (is (some? thrown))
+    (is (= {:malai/missing-fixes ["#1612"]} (ex-data thrown)))
+    (is (re-find #"This Jolt \(v0.8.26\) is missing: #1612\." (str err)))))

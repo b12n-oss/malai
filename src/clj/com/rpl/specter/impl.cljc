@@ -59,10 +59,17 @@
             "This Jolt (" version ") is missing: "
             (clojure.string/join ", " missing) "."))
 
+     (defn jolt-fail-missing-fixes!
+       "Prints the missing-fixes message to stderr, then throws it. Jolt's REPL
+        shows only the wrapping load error, not this cause, so the stderr line
+        is what a REPL user sees."
+       [missing version]
+       (let [msg (jolt-missing-fixes-message missing version)]
+         (binding [*out* *err*] (println msg))
+         (throw (ex-info msg {:malai/missing-fixes (vec missing)}))))
+
      (when-let [missing (seq (jolt-missing-fixes))]
-       (throw (ex-info (jolt-missing-fixes-message
-                        missing (or (System/getProperty "jolt.version") "unknown"))
-                       {:malai/missing-fixes (vec missing)})))))
+       (jolt-fail-missing-fixes! missing (or (System/getProperty "jolt.version") "unknown")))))
 
 #?(:jolt
    (do
