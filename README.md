@@ -58,32 +58,22 @@ malai's own version lives in `malai.version`, so `:refer :all` on
 
 ```clojure
 (require '[malai.version :as v])
-v/version       ;; => "0.1.0"
+v/version       ;; => "0.2.0"
 v/specter-base  ;; => "1.1.7-SNAPSHOT@6119462"
 ```
 
 ## On Jolt
 
-- **No inline path caching yet.** On the JVM, Specter compiles each path once
-  per call site. On Jolt, 0.1 builds it on every call instead, the way
-  Specter already does under babashka. The results are identical, but paths
-  are slower. Real caching is planned for 0.2.
-- **Jolt workarounds.** Each one sits in a `:jolt` branch with a comment
-  naming its Jolt issue: [#1612](https://github.com/jolt-lang/jolt/issues/1612)
-  (`(identical? [] [])` is false),
-  [#1613](https://github.com/jolt-lang/jolt/issues/1613) (`reduce` unwraps a
-  `Reduced` that an `IReduce` returns),
-  [#1614](https://github.com/jolt-lang/jolt/issues/1614) (most
-  `Persistent*/EMPTY` statics are missing) and
-  [#1615](https://github.com/jolt-lang/jolt/issues/1615)
-  (`clojure.core.reducers` is missing). When Jolt fixes one, its branch can go.
-- **One known difference.** Specter treats `vals` as "nothing collected"
-  only when it is the JVM's shared empty vector. Jolt has no shared empty
-  vector (#1612), so malai treats any empty vector that way. Specter's own
-  navigators always start from `[]`, so this only shows up in a rich
-  navigator you write that hands on a freshly built empty vector, such as
-  `(filterv pred vals)`. There, Jolt gives back the bare value where the JVM
-  gives it wrapped in a vector.
+Paths are cached per call site, as on the JVM. A static path is cached on
+its first call; a path that closes over locals compiles after 256 calls,
+because its first compile costs about 2 ms and a short CLI run shouldn't pay
+it. With caching, a static `transform` in `jolt bench` dropped from 18.75 µs
+to 8.38 µs per call and a `(keypath k)` select from 10.37 µs to 2.09 µs.
+
+At the REPL, `(m/clear-path-cache!)` makes call sites pick up a fn or
+navigator you redefined. The [Jolt guide](docs/guide/jolt.md) has the
+details: how caching works, the full timings, REPL use, `jolt build`, and
+the few places Jolt still differs from the JVM.
 
 ## Don't load two Specters
 
@@ -117,6 +107,8 @@ Tasks run through Jolt, which reads `bb.edn`:
 | `jolt test:clj` | The same suite on the JVM, through `lein test` |
 | `jolt test:bb` | The same suite on babashka (hands off to `bb`) |
 | `jolt verify` | All three, stopping at the first failure |
+| `jolt bench` | Timings of cached and uncached paths, warm and cold (report only) |
+| `jolt smoke:build` | Builds a test binary with `jolt build`, default and `--closed-world`, and checks its output |
 | `jolt metrics` | A jolt-metrics report (also `metrics:edn`, `metrics:html`); findings never fail it |
 | `jolt info` | Every task with its description |
 
