@@ -2,11 +2,57 @@
 ;; works too. `jolt info` lists them.
 {:paths ["src/clj"]
  :tasks
- {:requires ([clojure.edn :as edn] [clojure.string :as str])
+ {:requires ([clojure.edn :as edn] [clojure.string :as str] [babashka.fs :as fs] [babashka.process :as process])
   :init (do
           ;; $JOLT wins, then jolt on PATH
           (defn jolt-bin [] (or (System/getenv "JOLT") "jolt"))
-          (def under-bb? (some? (System/getProperty "babashka.version"))))
+          (def under-bb? (some? (System/getProperty "babashka.version")))
+          ;; The docs site is rendered by jlt-commons/docs-engine, which lives in
+          ;; its own repo; site:* tasks delegate to it and only preview locally.
+          ;; Found via $JLT_DOCS_ENGINE (or $DOCS_ENGINE), then
+          ;; ~/dev/jlt-commons/docs-engine, then a sibling checkout.
+          (def docs-engine-repo "https://github.com/jlt-commons/docs-engine")
+          (defn docs-engine-dir []
+            (let [home (System/getProperty "user.home")]
+              (->> [(System/getenv "JLT_DOCS_ENGINE")
+                    (System/getenv "DOCS_ENGINE")
+                    (str home "/dev/jlt-commons/docs-engine")
+                    "../docs-engine"]
+                   (remove nil?)
+                   (filter (fn [d] (fs/exists? (fs/file d "bb.edn"))))
+                   first)))
+          ;; The engine's build and clean run under jolt as `jolt run <task>`
+          ;; (bare `jolt build` is jolt's own native build); its serve needs bb,
+          ;; which bundles http-kit. Proxy vars cleared: the engine fetches
+          ;; markdown-clj and selmer on first run.
+          (defn site-task [task & args]
+            (if-let [engine (docs-engine-dir)]
+              (let [cmd (cond (= task "serve") ["bb" task]
+                              under-bb? ["bb" task]
+                              :else [(jolt-bin) "run" task])
+                    argv (into cmd (cons (str (fs/canonicalize ".")) (remove nil? args)))
+                    res (apply process/shell {:dir (str engine) :continue true
+                                              :extra-env {"HTTPS_PROXY" "" "https_proxy" ""
+                                                          "HTTP_PROXY" "" "http_proxy" ""}}
+                               argv)]
+                (when-not (zero? (:exit res)) (System/exit (:exit res))))
+              (do
+                (println "The docs engine is not checked out anywhere I looked:")
+                (println "  $JLT_DOCS_ENGINE, $DOCS_ENGINE, ~/dev/jlt-commons/docs-engine, ../docs-engine")
+                (println)
+                (println (str "  git clone " docs-engine-repo " ~/dev/jlt-commons/docs-engine"))
+                (System/exit 1))))
+          ;; Binding the wildcard address without SO_REUSEADDR is the test, so a
+          ;; port held on any interface counts as busy.
+          (defn can-bind? [p]
+            (let [s (java.net.ServerSocket.)]
+              (.setReuseAddress s false)
+              (try (.bind s (java.net.InetSocketAddress. (int p)))
+                   true
+                   (catch Exception _ false)
+                   (finally (.close s)))))
+          (defn free-port [base span]
+            (first (filter can-bind? (range base (inc (+ base span)))))))
 
   info {:doc "List the tasks with what each one does"
         :task (let [tasks (:tasks (edn/read-string (slurp "bb.edn")))]
@@ -61,6 +107,29 @@
                              (println (str "smoke:build: " out " printed:\n" got "expected:\n" expected))
                              (System/exit 1))
                            (println "ok"))))}
+
+  site:build {:doc "Build the documentation site (docs/guide, docs/site.edn) into _site/ with jlt-commons/docs-engine"
+              :task (site-task "build")}
+  ;; No port given: scan from 3000 for a free one. A port you name is used
+  ;; strictly and refused when busy, never swapped for another.
+  site:serve {:doc "Build the docs site and serve it locally at /malai/; first free port from 3000, or site:serve PORT (refused if busy); needs bb"
+              :task (let [requested (first *command-line-args*)
+                          port (when requested (parse-long requested))]
+                      (when (and requested (not (and port (<= 1 port 65535))))
+                        (println (str "site:serve: the port is a number from 1 to 65535, not " requested))
+                        (System/exit 1))
+                      (if port
+                        (if (can-bind? port)
+                          (site-task "serve" (str port))
+                          (do (println (str "site:serve: port " port " is busy; pick another, or drop the argument to scan from 3000"))
+                              (System/exit 1)))
+                        (if-let [p (free-port 3000 100)]
+                          (do (println (str "site:serve: using free port " p))
+                              (site-task "serve" (str p)))
+                          (do (println "site:serve: no free port in 3000..3100")
+                              (System/exit 1)))))}
+  site:clean {:doc "Delete the _site/ build output"
+              :task (site-task "clean")}
 
   ;; Report only: findings never fail these. metrics.cli exits non-zero
   ;; only on bad usage or a missing directory, and that exit passes through.
