@@ -1,0 +1,15 @@
+;; malai on Jolt. JVM users build with lein (project.clj), since the :clj
+;; code needs the compiled classes in src/java.
+{:paths ["src/clj"]
+ :deps {}
+ :jolt/min-version "0.8.26"
+ :aliases
+ {;; jolt test: upstream's suite plus malai's own tests, on Jolt
+  :test-jolt {:extra-paths ["test"]
+              :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}}
+              :main-opts ["-m" "malai.jolt-runner"]}
+  ;; Code metrics report (jolt metrics): jolt-metrics' CLI. Report only.
+  :metrics {:extra-deps {io.github.jlt-commons/jolt-metrics
+                         {:git/url "https://github.com/jlt-commons/jolt-metrics"
+                          :git/tag "v0.4.0" :git/sha "e51804d"}}
+            :main-opts ["-m" "metrics.cli"]}}}

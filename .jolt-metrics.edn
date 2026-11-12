@@ -1,0 +1,9 @@
+;; jolt-metrics config for `jolt metrics` (report only, never a gate).
+;; Tests are measured but kept out of the refactoring queue. The public
+;; Specter namespaces and malai.core are API, so their public functions are
+;; never listed as unreferenced.
+{:exclude ["docs/**" "scripts/**"]
+ :test-paths ["test"]
+ :api-namespaces ["com.rpl.specter" "com.rpl.specter.zipper"
+                  "com.rpl.specter.transients" "com.rpl.specter.protocols"
+                  "malai.core"]}

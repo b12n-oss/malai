@@ -1,0 +1,16 @@
+(ns malai.jolt-runner
+  "Runs the test suite on Jolt with plain clojure.test: upstream Specter's
+   tests and malai's own. Exits 0 only with no failures and no errors."
+  (:require [clojure.test :as t]
+            [com.rpl.specter.core-test]
+            [com.rpl.specter.zipper-test]))
+
+(def test-nss
+  '[com.rpl.specter.core-test
+    com.rpl.specter.zipper-test])
+
+(defn -main [& _]
+  (let [{:keys [test pass fail error] :as summary}
+        (apply t/run-tests test-nss)]
+    (println :summary (select-keys summary [:test :pass :fail :error]))
+    (System/exit (if (and (zero? fail) (zero? error) (pos? test)) 0 1))))

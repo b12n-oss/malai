@@ -1,19 +1,57 @@
+;; Tasks for malai. Run them as `jolt <task>` (jolt reads bb.edn); `bb <task>`
+;; works too. `jolt info` lists them.
 {:paths ["src/clj"]
  :tasks
- {test:clj  {:doc "Run clj tests with leiningen"
-             :task (shell "lein test")}
+ {:requires ([clojure.edn :as edn] [clojure.string :as str])
+  :init (do
+          ;; $JOLT wins, then jolt on PATH
+          (defn jolt-bin [] (or (System/getenv "JOLT") "jolt"))
+          (def under-bb? (some? (System/getProperty "babashka.version"))))
 
-  test:cljs {:doc "Run cljs tests with leiningen"
+  info {:doc "List the tasks with what each one does"
+        :task (let [tasks (:tasks (edn/read-string (slurp "bb.edn")))]
+                (println "malai tasks (run as: jolt <task>)")
+                (doseq [[k v] (sort-by (fn [[k _]] (str k)) tasks)
+                        :when (and (symbol? k) (map? v))]
+                  (println (format "  %-14s %s" k (:doc v "")))))}
+
+  test {:doc "Run the suite on Jolt: upstream Specter's tests and malai's own (test/malai/jolt_runner.jolt)"
+        :task (shell (jolt-bin) "-M:test-jolt")}
+
+  test:clj {:doc "Run the suite on the JVM with leiningen (upstream's task)"
+            :task (shell "lein test")}
+
+  test:cljs {:doc "Run cljs tests with leiningen (upstream's task)"
              :task (shell "lein doo node test-build once")}
 
-  test:bb   {:doc "Run bb tests"
-             :extra-paths ["test"]
-             :extra-deps {org.clojure/test.check {:mvn/version "0.9.0"}
-                          io.github.cognitect-labs/test-runner
-                          {:git/tag "v0.5.0" :git/sha "b3fd0d2"}
-                          org.clojure/tools.namespace {:git/url "https://github.com/babashka/tools.namespace"
-                                                       :git/sha "3625153ee66dfcec2ba600851b5b2cbdab8fae6c"}}
-             :requires ([cognitect.test-runner :as tr])
-             :task (apply tr/-main
+  test:bb {:doc "Run the suite on babashka (upstream's task); under jolt it hands off to bb"
+           :extra-paths ["test"]
+           :extra-deps {org.clojure/test.check {:mvn/version "0.9.0"}
+                        io.github.cognitect-labs/test-runner
+                        {:git/tag "v0.5.0" :git/sha "b3fd0d2"}
+                        org.clojure/tools.namespace {:git/url "https://github.com/babashka/tools.namespace"
+                                                     :git/sha "3625153ee66dfcec2ba600851b5b2cbdab8fae6c"}}
+           :task (if under-bb?
+                   (apply (requiring-resolve 'cognitect.test-runner/-main)
                           "-d" "test"
-                          *command-line-args*)}}}
+                          *command-line-args*)
+                   (apply shell "bb test:bb" *command-line-args*))}
+
+  verify {:doc "The gate: test (Jolt), test:clj (JVM), test:bb (babashka); stops at the first failure"
+          :task (doseq [t ["test" "test:clj" "test:bb"]]
+                  (println (str "== " t))
+                  (shell (if under-bb? "bb" (jolt-bin)) t))}
+
+  ;; Report only: findings never fail these. metrics.cli exits non-zero
+  ;; only on bad usage or a missing directory, and that exit passes through.
+  metrics {:doc "jolt-metrics report over the repo (Markdown; findings never fail it). Extra args go to metrics.cli: an output file (its extension picks the format), --top N, --no-git, --exclude GLOB"
+           :task (apply shell (jolt-bin) "-M:metrics" "." *command-line-args*)}
+  metrics:edn {:doc "jolt-metrics findings as EDN (findings never fail it). Extra args as for metrics"
+               :task (apply shell (jolt-bin) "-M:metrics" "." "--format" "edn" *command-line-args*)}
+  metrics:html {:doc "jolt-metrics as one self-contained HTML page, target/metrics.html unless a file comes first (findings never fail it). Extra args as for metrics"
+                :task (let [args *command-line-args*
+                            out? (and (seq args) (not (str/starts-with? (first args) "-")))
+                            args (if out? args (cons "target/metrics.html" args))
+                            dir (re-find (re-pattern "^.*/") (first args))]
+                        (when dir (shell "mkdir -p" dir))
+                        (apply shell (jolt-bin) "-M:metrics" "." "--format" "html" args))}}}
