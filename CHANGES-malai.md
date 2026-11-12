@@ -2,10 +2,10 @@
 
 Upstream Specter's history is in `CHANGES.md`, unchanged.
 
-## 0.3.0 (unreleased, branch p2b-drop-workarounds)
+## 0.3.0 (unreleased)
 
-- Needs a Jolt with fixes for jolt-lang/jolt#1612 to #1616 (PRs #1617,
-  #1618, #1619, #1621, #1622). Malai's workarounds for them are gone, so Jolt
+- Needs Jolt 0.8.27 or newer, the first release with fixes for
+  jolt-lang/jolt#1612 to #1616 (PRs #1617, #1618, #1619, #1621, #1622). Malai's workarounds for them are gone, so Jolt
   runs Specter's own code there.
 - Collected `vals` built as a fresh empty vector by your own navigator now
   match the JVM, which closes 0.1's one known difference.

@@ -31,17 +31,16 @@ and in Malai's smoke test it came out about the same size as a default build
 
 ## Timings
 
-`jolt bench` prints these on your machine. On an Apple M1 Pro, a 3-map
-structure, with a Jolt that has the fixes Malai needs (the pre-release
-`v0.8.26-36-g2337c3fa`):
+`jolt bench` prints these on your machine. On Jolt 0.8.27, an Apple M1
+Pro, a 3-map structure:
 
 | | µs per call |
 |---|---|
-| static path, cached | 7.20 |
-| dynamic path `(keypath k)`, cached | 1.99 |
-| the same two through `malai.core` | 6.93 and 1.97 |
-| static path compiled once by hand (`comp-paths`) | 6.59 |
-| hand-written `update`/`mapv` | 1.67 |
+| static path, cached | 6.84 |
+| dynamic path `(keypath k)`, cached | 1.91 |
+| the same two through `malai.core` | 6.98 and 1.96 |
+| static path compiled once by hand (`comp-paths`) | 6.66 |
+| hand-written `update`/`mapv` | 1.70 |
 
 Before caching (Malai 0.1 on Jolt 0.8.26), the same static path took
 18.75 µs and the dynamic one 10.37 µs.
@@ -86,7 +85,7 @@ that failed to compile. It stays uncached, and its answers stay correct.
 ## Which Jolt
 
 Malai runs Specter's own code wherever Jolt behaves like the JVM, which
-needs a Jolt with fixes for [#1612](https://github.com/jolt-lang/jolt/issues/1612),
+needs Jolt 0.8.27 or newer: the first release with fixes for [#1612](https://github.com/jolt-lang/jolt/issues/1612),
 [#1613](https://github.com/jolt-lang/jolt/issues/1613),
 [#1614](https://github.com/jolt-lang/jolt/issues/1614),
 [#1615](https://github.com/jolt-lang/jolt/issues/1615) and
@@ -99,8 +98,9 @@ Malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. This Jol
 ```
 
 At the Jolt REPL that line is printed above Jolt's own "Syntax error
-macroexpanding" message ([#1627](https://github.com/jolt-lang/jolt/issues/1627)).
-Malai 0.2 still runs on Jolt 0.8.26.
+macroexpanding" message, because that Jolt hides a load error's own message
+([#1627](https://github.com/jolt-lang/jolt/issues/1627), fixed in 0.8.27).
+On Jolt 0.8.26, use Malai 0.2.
 
 With those fixes, Malai on Jolt gives the JVM's answers everywhere its tests
 and probes look, including collected `vals` built by your own navigators.
