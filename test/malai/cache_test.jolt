@@ -11,26 +11,87 @@
 (defn- in-loop [] (vec (for [k [:a :b :c]] (s/select [s/ALL (s/keypath k)] data))))
 (defn- static-site [] (s/select [s/ALL :a] data))
 
-(defn- count-compiles
-  "Calls f n times on an empty cache. Returns [magic-precompilation calls,
-   cache entries, dynamic entries]."
-  [f n]
+(defn- counting-makers
+  "Runs body-fn on an empty cache with mk-dynamic-path-maker counted.
+   Returns [maker calls, the body's result]."
+  [body-fn]
   (reset! i/jolt-path-cache {})
   (let [calls (atom 0)
-        orig i/magic-precompilation]
-    (with-redefs [i/magic-precompilation (fn [& args] (swap! calls inc) (apply orig args))]
-      (dotimes [_ n] (f)))
-    [@calls
-     (count @i/jolt-path-cache)
-     (count (filter (fn [[_ v]] (and (instance? com.rpl.specter.impl.CachedPathInfo v)
-                                     (i/cached-path-info-dynamic? v)))
-                    @i/jolt-path-cache))]))
+        orig i/mk-dynamic-path-maker]
+    (with-redefs [i/mk-dynamic-path-maker (fn [& args] (swap! calls inc) (apply orig args))]
+      (let [r (body-fn)]
+        [@calls r]))))
 
-(deftest compiles-once-per-call-site
-  (testing "static" (is (= [1 1 0] (count-compiles static-site 5))))
-  (testing "nested view: outer path and inner select" (is (= [2 2 2] (count-compiles #(nested-view :a) 5))))
-  (testing "collected?" (is (= [1 1 1] (count-compiles #(with-collected 1) 5))))
-  (testing "for loop" (is (= [1 1 1] (count-compiles in-loop 5)))))
+(defn- entries [] (vals @i/jolt-path-cache))
+(defn- compiled-dynamic [] (count (filter #(and (instance? com.rpl.specter.impl.CachedPathInfo %)
+                                                 (i/cached-path-info-dynamic? %))
+                                           (entries))))
+
+(deftest few-calls-never-compile
+  ;; 5 calls: static sites are cached, dynamic sites are still counting
+  (testing "static"
+    (is (= [0 [1 0]] (counting-makers #(do (dotimes [_ 5] (static-site)) [(count (entries)) (compiled-dynamic)])))))
+  (testing "nested view: outer path and inner select"
+    (is (= [0 [2 0]] (counting-makers #(do (dotimes [_ 5] (nested-view :a)) [(count (entries)) (compiled-dynamic)])))))
+  (testing "collected?"
+    (is (= [0 [1 0]] (counting-makers #(do (dotimes [_ 5] (with-collected 1)) [(count (entries)) (compiled-dynamic)])))))
+  (testing "for loop"
+    (is (= [0 [1 0]] (counting-makers #(do (dotimes [_ 5] (in-loop)) [(count (entries)) (compiled-dynamic)]))))))
+
+(deftest static-caches-on-first-call
+  (let [[makers [r e]] (counting-makers #(vector (static-site) (first (entries))))]
+    (is (= [1 3] r))
+    (is (= 0 makers))
+    (is (= 1 (count (entries))))
+    (is (instance? com.rpl.specter.impl.CachedPathInfo e))
+    (is (not (i/cached-path-info-dynamic? e)))))
+
+(defn- kp [k] (s/select [s/ALL (s/keypath k)] data))
+
+(deftest dynamic-tiers
+  (is (= 256 i/jolt-compile-after))
+  (let [[m255 ok255] (counting-makers #(every? true? (repeatedly 255 (fn [] (= [1 3] (kp :a))))))]
+    (is (= 0 m255))
+    (is ok255))
+  (reset! i/jolt-path-cache {})
+  (let [calls (atom 0) orig i/mk-dynamic-path-maker]
+    (with-redefs [i/mk-dynamic-path-maker (fn [& args] (swap! calls inc) (apply orig args))]
+      (dotimes [_ 255] (kp :a))
+      (is (= 0 @calls))
+      (is (= [2 4] (kp :b)))
+      (is (= 1 @calls) "the 256th call compiles")
+      (is (every? true? (repeatedly 44 (fn [] (= [1 3] (kp :a))))))
+      (is (= 1 @calls) "and only once"))))
+
+(deftest nested-view-across-the-boundary
+  (reset! i/jolt-path-cache {})
+  (is (every? true? (for [i (range 300)] (= (if (even? i) [[1] [3]] [[2] [4]])
+                                              (nested-view (if (even? i) :a :b)))))))
+
+(def ^:dynamic *dvar* :a)
+(defn- dvar-site [] (s/select-any *dvar* {:a 1 :b 2}))
+
+(deftest dynamic-var-after-compile
+  (reset! i/jolt-path-cache {})
+  (is (every? #{1} (repeatedly 300 dvar-site)))
+  (is (= 1 (compiled-dynamic)))
+  (is (= 2 (binding [*dvar* :b] (dvar-site)))))
+
+(deftest compile-failure-stays-uncached
+  (reset! i/jolt-path-cache {})
+  (let [calls (atom 0)]
+    (with-redefs [i/mk-dynamic-path-maker (fn [& _] (swap! calls inc) (throw (ex-info "boom" {})))]
+      (is (every? true? (repeatedly 300 (fn [] (= [1 3] (kp :a)))))))
+    (is (= 1 @calls) "compile tried once, not on every call")
+    (is (= [:com.rpl.specter.impl/uncached] (vec (entries))))
+    (is (= [2 4] (kp :b)))))
+
+(deftest concurrent-boundary
+  (reset! i/jolt-path-cache {})
+  (let [fs (doall (for [t (range 8)]
+                    (future (every? true? (repeatedly 100 (fn [] (= [1 3] (kp :a))))))))]
+    (is (every? true? (map deref fs)))
+    (is (= 1 (compiled-dynamic)))))
 
 (deftest fn-metadata-is-not-shared
   ;; jolt-lang/jolt#1616: with-meta on a fn changes it in place on jolt

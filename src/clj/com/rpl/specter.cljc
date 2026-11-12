@@ -282,19 +282,18 @@
                 possible-params (vec (ic-possible-params path))
                 cache-key (keyword (str *ns*) (str (gensym "pathcache")))
                 precompiled-sym (gensym "precompiled")]
-            `(let [info# (i/jolt-cache-get ~cache-key)
-                   info# (if (nil? info#)
-                           (i/jolt-cache-put! ~cache-key
-                                              (i/magic-precompilation
-                                               ~prepared-path
-                                               ~(str *ns*)
-                                               (quote ~used-locals)
-                                               (quote ~possible-params)))
-                           info#)
-                   ~precompiled-sym (i/cached-path-info-precompiled info#)]
-               (if (i/cached-path-info-dynamic? info#)
-                 (~precompiled-sym ~@used-locals)
-                 ~precompiled-sym)))
+            ;; static paths are cached on the first call; dynamic ones run
+            ;; uncached until i/jolt-compile-after calls, then compile
+            `(if-let [info# (i/jolt-path-info ~cache-key
+                                              (fn [] ~prepared-path)
+                                              ~(str *ns*)
+                                              (quote ~used-locals)
+                                              (quote ~possible-params))]
+               (let [~precompiled-sym (i/cached-path-info-precompiled info#)]
+                 (if (i/cached-path-info-dynamic? info#)
+                   (~precompiled-sym ~@used-locals)
+                   ~precompiled-sym))
+               (comp-paths ~@path)))
           :default
           (let [;;this is a hack, but the composition of &env is considered stable for cljs
                   platform (if (contains? &env :locals) :cljs :clj)

@@ -1013,6 +1013,53 @@
                    possible-params)]
         (->CachedPathInfo true maker)))))
 
+#?(:jolt
+   (do
+     ;; jolt: a dynamic call site runs uncached for this many calls before it
+     ;; compiles. Compiling costs about 2 ms (an eval), which pays off after
+     ;; roughly this many calls, so short runs never pay it.
+     (def jolt-compile-after 256)
+
+     (defn- jolt-pending? [e] (and (map? e) (contains? e ::pending)))
+
+     (defn- jolt-compile! [k e ns-str used-locals possible-params]
+       (try
+         (jolt-cache-put! k (->CachedPathInfo
+                             true
+                             (mk-dynamic-path-maker
+                              (resolve-nav-code (->DynamicPath (::magic e)) possible-params)
+                              ns-str used-locals possible-params)))
+         (catch Throwable _
+           ;; stay on the uncached route for good; never retry on every call
+           (swap! jolt-path-cache assoc k ::uncached)
+           nil)))
+
+     (defn jolt-path-info
+       "The cached path for call site k, or nil when this call should take
+        the uncached route. Static paths are cached on the first call;
+        dynamic ones after jolt-compile-after calls. prepare-thunk builds the
+        prepared path and runs only on the first call."
+       [k prepare-thunk ns-str used-locals possible-params]
+       (let [e (get @jolt-path-cache k)]
+         (cond
+           (instance? CachedPathInfo e) e
+           (= e ::uncached) nil
+           (nil? e)
+           (let [m (-> (prepare-thunk) magic-precompilation* static-combine)]
+             (if (rich-nav? m)
+               (jolt-cache-put! k (->CachedPathInfo false m))
+               (do (swap! jolt-path-cache assoc k {::pending 1 ::magic m})
+                   nil)))
+           :else
+           (let [cur (get (swap! jolt-path-cache update k
+                                 (fn [c] (if (jolt-pending? c) (update c ::pending inc) c)))
+                          k)]
+             (cond
+               (instance? CachedPathInfo cur) cur
+               (and (jolt-pending? cur) (>= (::pending cur) jolt-compile-after))
+               (jolt-compile! k cur ns-str used-locals possible-params)
+               :else nil)))))))
+
 
 
 (defn compiled-setval* [path val structure]
