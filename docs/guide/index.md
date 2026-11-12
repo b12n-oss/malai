@@ -27,6 +27,8 @@ applies on Jolt.
 
 ## Pages
 
+- [Specter on the JVM, babashka and Jolt](comparison.md): how each host runs
+  Specter, side by side, with timings, and which one to use where.
 - [Specter on Jolt](jolt.md): how paths are cached on Jolt, timings from
   `jolt bench`, using it at the REPL, `jolt build` binaries, and which Jolt
   malai needs.
