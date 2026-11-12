@@ -1,4 +1,4 @@
-# malai changes
+# Malai changes
 
 Upstream Specter's history is in `CHANGES.md`, unchanged.
 
@@ -23,7 +23,7 @@ Upstream Specter's history is in `CHANGES.md`, unchanged.
   and #1615. Upstream's suite passes on Jolt, the JVM and babashka.
 - No inline path caching on Jolt yet; paths are built on every call.
 - `malai.core` re-exports every public var of `com.rpl.specter`, and
-  refuses to load (with a malai error) when the `com.rpl.specter` on the
+  refuses to load (with a Malai error) when the `com.rpl.specter` on the
   path is the original Specter.
 - `malai.version` holds `version` and `specter-base`.
 - `deps.edn` for Jolt users; `bb.edn` tasks run as `jolt <task>` (`test`,

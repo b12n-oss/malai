@@ -1,6 +1,6 @@
 # Specter on Jolt
 
-This page covers only what is different about running Specter through malai
+This page covers only what is different about running Specter through Malai
 on [Jolt](https://github.com/jolt-lang/jolt). For Specter itself (navigators,
 `select`, `transform`, writing your own navigators) read
 [upstream's docs](https://github.com/redplanetlabs/specter/wiki); everything
@@ -9,7 +9,7 @@ there applies.
 ## How paths are cached
 
 On the JVM, Specter compiles the path at each `select`/`transform` call site
-once and reuses it. malai does the same on Jolt, with one twist for paths
+once and reuses it. Malai does the same on Jolt, with one twist for paths
 that use local values.
 
 - **A static path** such as `[MAP-VALS ALL :y ALL even?]` is cached on its
@@ -24,9 +24,9 @@ that use local values.
 
 The cache lives in a table at run time, so it works the same under
 `jolt -M` and in a `jolt build` binary, `--closed-world` included. With
-`--closed-world` Jolt reports that it skipped tree-shaking, because malai's
+`--closed-world` Jolt reports that it skipped tree-shaking, because Malai's
 code calls `eval`, `resolve` and `intern` at run time. The binary is correct,
-and in malai's smoke test it came out about the same size as a default build
+and in Malai's smoke test it came out about the same size as a default build
 (22.8 MB against 22.9 MB).
 
 ## Timings
@@ -42,7 +42,7 @@ Pro, a 3-map structure:
 | static path compiled once by hand (`comp-paths`) | 7.74 |
 | hand-written `update`/`mapv` | 1.90 |
 
-Before caching (malai 0.1), the same static path took 18.75 µs and the
+Before caching (Malai 0.1), the same static path took 18.75 µs and the
 dynamic one 10.37 µs.
 
 | Cold, after `clear-path-cache!` | ms |
@@ -54,7 +54,7 @@ dynamic one 10.37 µs.
 
 Caching closes the gap to compiling the path yourself. Jolt's navigators
 are still slower than the JVM's (Specter 1.1.4 on the JVM ran the static path
-in about 3 µs), and malai doesn't try to change that.
+in about 3 µs), and Malai doesn't try to change that.
 
 ## At the REPL
 
@@ -85,7 +85,7 @@ that failed to compile. It stays uncached, and its answers stay correct.
 ## Differences from the JVM
 
 - **Collected vals built by your own navigator.** Specter treats `vals` as
-  "nothing collected" only when it is the JVM's shared empty vector. malai
+  "nothing collected" only when it is the JVM's shared empty vector. Malai
   treats any empty vector that way on Jolt. This only matters for a rich
   navigator you write that hands on a freshly built empty vector, such as
   `(filterv pred vals)`; there Jolt returns the bare value where the JVM

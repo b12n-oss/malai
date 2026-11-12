@@ -7,7 +7,7 @@
  ;; mounts the build under it, so the local URL matches.
  :base-path   "/malai"
 
- :title       "malai"
+ :title       "Malai"
  :description "Specter on Jolt: a fork of redplanetlabs/specter that runs on Jolt, with inline path caching."
 
  ;; docs/images (logo, botanical plate), copied to the site's images/
