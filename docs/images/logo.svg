@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="title">
+  <title id="title">malai</title>
+  <!-- A short phuang malai (Thai jasmine garland): a thread drooping in a curve,
+       strung with closed jasmine buds at the ends and open five-petal
+       blooms between, tied at the bottom with a marigold and a short
+       tassel. -->
+  <defs>
+    <!-- one jasmine petal pointing up from 0,0 -->
+    <path id="petal" d="M0 0 C-5.5 -3 -5.5 -10.5 0 -12.5 C5.5 -10.5 5.5 -3 0 0 Z"/>
+    <g id="bloom">
+      <g fill="url(#white)" stroke="#B9B8A6" stroke-width="0.9" stroke-linejoin="round">
+        <use href="#petal"/>
+        <use href="#petal" transform="rotate(72)"/>
+        <use href="#petal" transform="rotate(144)"/>
+        <use href="#petal" transform="rotate(216)"/>
+        <use href="#petal" transform="rotate(288)"/>
+      </g>
+      <circle r="2.6" fill="#E9D98A" stroke="#BFA74A" stroke-width="0.7"/>
+    </g>
+    <g id="bud">
+      <ellipse rx="4.2" ry="7" fill="url(#white)" stroke="#B9B8A6" stroke-width="0.9"/>
+      <path d="M-3 4.5 C-1.5 7.5 1.5 7.5 3 4.5" fill="#8DB255" stroke="#5E7F31" stroke-width="0.8"/>
+    </g>
+    <radialGradient id="white" cx="0" cy="-4" r="13" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.7" stop-color="#F7F6EC"/>
+      <stop offset="1" stop-color="#E4E2CF"/>
+    </radialGradient>
+    <radialGradient id="marigold" cx="62" cy="75" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFC24A"/>
+      <stop offset="0.6" stop-color="#F7931E"/>
+      <stop offset="1" stop-color="#D9620B"/>
+    </radialGradient>
+  </defs>
+
+  <!-- the thread -->
+  <path d="M12 22 Q64 132 116 22" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- tassel below the knot -->
+  <g stroke="#C2410C" stroke-width="1.3" stroke-linecap="round" fill="none">
+    <path d="M64 87 L59 118"/>
+    <path d="M64 87 L64 121"/>
+    <path d="M64 87 L69 118"/>
+  </g>
+  <path d="M57.5 99 C61 97 67 97 70.5 99 L69.5 103.5 C66 102 62 102 58.5 103.5 Z" fill="#7FA34A" stroke="#5E7F31" stroke-width="0.8"/>
+
+  <!-- buds toward the ends, open blooms nearer the knot, each tilted
+       along the curve -->
+  <use href="#bud" transform="translate(19.3 36.3) rotate(-29) scale(1.15)"/>
+  <use href="#bud" transform="translate(29.7 53) rotate(-36) scale(1.2)"/>
+  <use href="#bloom" transform="translate(42.2 67.3) rotate(-14) scale(1.3)"/>
+  <use href="#bloom" transform="translate(85.8 67.3) rotate(14) scale(1.3)"/>
+  <use href="#bud" transform="translate(98.3 53) rotate(36) scale(1.2)"/>
+  <use href="#bud" transform="translate(108.7 36.3) rotate(29) scale(1.15)"/>
+
+  <!-- the marigold where the strand is tied -->
+  <circle cx="64" cy="77" r="11" fill="url(#marigold)" stroke="#B4500A" stroke-width="1"/>
+  <g fill="none" stroke="#C25A0C" stroke-width="0.9" stroke-linecap="round" opacity="0.75">
+    <circle cx="64" cy="77" r="7"/>
+    <circle cx="64" cy="77" r="3.2"/>
+  </g>
+</svg>

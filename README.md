@@ -1,3 +1,147 @@
+<p align="center"><img src="docs/images/logo.svg" alt="malai logo: a short jasmine garland, white buds and two open five-petal blooms on a red thread, tied at the bottom with a marigold and a short tassel" width="160"></p>
+
+<h1 align="center">malai</h1>
+
+malai is [Specter](https://github.com/redplanetlabs/specter) running on
+[Jolt](https://github.com/jolt-lang/jolt), the native Clojure on Chez Scheme.
+It's a fork that keeps Specter's own namespaces, so code that requires
+`com.rpl.specter` runs on Jolt with no changes to its `require` lines. There's
+also `malai.core`, which re-exports the same API under malai's own name.
+
+Specter is Nathan Marz's library, from Red Planet Labs, and everything good
+about it is theirs. malai adds `#?(:jolt ...)` reader branches next to the
+`:bb` ones Specter already had, plus a few workarounds for places where Jolt
+still differs from the JVM. On the JVM, ClojureScript and babashka the code
+behaves exactly as upstream's.
+
+> [!NOTE]
+> malai is private for now. The coordinates below work for people with access
+> to `b12n-oss/malai`.
+
+## Install (Jolt)
+
+Add it to `deps.edn` as a git dependency. It needs Jolt 0.8.26 or newer.
+
+```clojure
+{:deps {io.github.b12n-oss/malai {:git/url "https://github.com/b12n-oss/malai"
+                                 :git/sha "<commit>"}}}
+```
+
+**Use malai on Jolt and `com.rpl/specter` from Clojars on the JVM.** malai's
+`deps.edn` is for Jolt. Specter's JVM code needs two small Java classes
+compiled first, which `lein` does from `project.clj` but a `deps.edn` git
+dependency doesn't, so a JVM project that pulled malai through `deps.edn`
+would fail to load.
+
+## Usage
+
+Existing Specter code works as it is:
+
+```clojure
+(require '[com.rpl.specter :as s])
+
+(s/transform [s/MAP-VALS s/ALL even?] inc {:a [1 2 3] :b [4 5]})
+;; => {:a [1 3 3], :b [5 5]}
+```
+
+or through malai's name:
+
+```clojure
+(require '[malai.core :as m])
+
+(m/select [m/ALL :x odd?] [{:x 1} {:x 2} {:x 3}])
+;; => [1 3]
+```
+
+malai's own version lives in `malai.version`, so `:refer :all` on
+`malai.core` brings in Specter's names and nothing else:
+
+```clojure
+(require '[malai.version :as v])
+v/version       ;; => "0.1.0"
+v/specter-base  ;; => "1.1.7-SNAPSHOT@6119462"
+```
+
+## On Jolt
+
+- **No inline path caching yet.** On the JVM, Specter compiles each path once
+  per call site. On Jolt, 0.1 builds it on every call instead, the way
+  Specter already does under babashka. The results are identical, but paths
+  are slower. Real caching is planned for 0.2.
+- **Jolt workarounds.** Each one sits in a `:jolt` branch with a comment
+  naming its Jolt issue: [#1612](https://github.com/jolt-lang/jolt/issues/1612)
+  (`(identical? [] [])` is false),
+  [#1613](https://github.com/jolt-lang/jolt/issues/1613) (`reduce` unwraps a
+  `Reduced` that an `IReduce` returns),
+  [#1614](https://github.com/jolt-lang/jolt/issues/1614) (most
+  `Persistent*/EMPTY` statics are missing) and
+  [#1615](https://github.com/jolt-lang/jolt/issues/1615)
+  (`clojure.core.reducers` is missing). When Jolt fixes one, its branch can go.
+- **One known difference.** Specter treats `vals` as "nothing collected"
+  only when it is the JVM's shared empty vector. Jolt has no shared empty
+  vector (#1612), so malai treats any empty vector that way. Specter's own
+  navigators always start from `[]`, so this only shows up in a rich
+  navigator you write that hands on a freshly built empty vector, such as
+  `(filterv pred vals)`. There, Jolt gives back the bare value where the JVM
+  gives it wrapped in a vector.
+
+## Don't load two Specters
+
+malai and the original Specter provide the same namespaces. If a project gets
+both, for instance because another library depends on `com.rpl/specter`,
+whichever copy loads first wins and nothing warns you. So check your
+dependency tree before adding malai, and keep `com.rpl/specter` out of a Jolt
+project.
+
+`malai.core` checks for a marker var that only malai's `com.rpl.specter.impl`
+has, and it throws when the loaded copy is the original:
+
+```
+malai: com.rpl.specter was loaded from the original Specter, not malai. Remove com.rpl/specter from your dependencies; malai provides those namespaces.
+```
+
+On Jolt the check reads `com/rpl/specter/impl.cljc` before loading it,
+since the original copy can't load there at all (it needs riddley, a
+JVM-only library). The check only runs when something requires
+`malai.core`. Code that requires `com.rpl.specter` directly gets whichever
+copy comes first, so on Jolt the sign of the wrong one is
+`Could not locate riddley/walk.jolt`.
+
+## Development
+
+Tasks run through Jolt, which reads `bb.edn`:
+
+| Task | What it does |
+|---|---|
+| `jolt test` | The suite on Jolt: upstream Specter's tests plus `test/malai/*` |
+| `jolt test:clj` | The same suite on the JVM, through `lein test` |
+| `jolt test:bb` | The same suite on babashka (hands off to `bb`) |
+| `jolt verify` | All three, stopping at the first failure |
+| `jolt metrics` | A jolt-metrics report (also `metrics:edn`, `metrics:html`); findings never fail it |
+| `jolt info` | Every task with its description |
+
+## License
+
+Apache License 2.0, the same as Specter. See [LICENSE](LICENSE) and
+[NOTICE](NOTICE).
+
+## The name
+
+พวงมาลัย (*phuang malai*) is the Thai jasmine garland: a thread pushed through
+flower after flower, often tied off with a marigold. A Specter path does
+something like that through its navigators.
+
+<p align="center"><img src="docs/images/malai-1880.jpg" alt="Botanical plate of Jasminum sambac: two flowering sprigs with dark green oval leaves and white double jasmine flowers, with leaf and flower details drawn beside them" width="240"></p>
+
+*Jasminum sambac*, plate 6 of Francisco Manuel Blanco's *Flora de Filipinas*,
+Gran edición, Atlas I (about 1880 to 1883). Public domain, via
+[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Jasminum_sambac_Blanco1.6.jpg).
+The logo in `docs/images/logo.svg` was drawn for this project.
+
+---
+
+*Upstream Specter's README follows, unchanged.*
+
 # Specter
 
 Specter rejects Clojure's restrictive approach to immutable data structure manipulation, instead exposing an elegant API to allow any sort of manipulation imaginable. Specter especially excels at querying and transforming nested and recursive data, important use cases that are very complex to handle with vanilla Clojure.

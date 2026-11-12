@@ -1,0 +1,13 @@
+malai
+Copyright 2026 malai contributors
+
+This product is a modified version of Specter
+(https://github.com/redplanetlabs/specter), Copyright Red Planet Labs and
+Nathan Marz, licensed under the Apache License, Version 2.0.
+
+malai's changes: #?(:jolt ...) reader branches in com.rpl.specter,
+com.rpl.specter.impl and com.rpl.specter.navs so Specter runs on Jolt; a
+marker var in com.rpl.specter.impl; the malai.core and malai.version
+namespaces; tests under test/malai; deps.edn, bb.edn tasks and
+documentation. The JVM, ClojureScript and babashka code paths are
+unchanged.
