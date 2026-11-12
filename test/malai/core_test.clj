@@ -5,8 +5,20 @@
             [malai.version]))
 
 (deftest publics-match
+  ;; malai.core adds exactly one name of its own
   (is (= (set (keys (ns-publics 'com.rpl.specter)))
-         (set (keys (ns-publics 'malai.core))))))
+         (disj (set (keys (ns-publics 'malai.core))) 'clear-path-cache!))))
+
+(deftest direct-nav-meta-survives
+  ;; the inline-cache compiler reads :direct-nav off the var
+  (doseq [s '[pred pred= pred< pred<= pred> pred>= terminal-val]]
+    (testing s
+      (is (:direct-nav (meta (ns-resolve 'com.rpl.specter s))))
+      (is (= (:direct-nav (meta (ns-resolve 'com.rpl.specter s)))
+             (:direct-nav (meta (ns-resolve 'malai.core s))))))))
+
+(deftest clear-path-cache-is-safe-everywhere
+  (is (nil? (m/clear-path-cache!))))
 
 (deftest macros-stay-macros
   (doseq [s '[select transform setval path defnav recursive-path]]

@@ -2,7 +2,8 @@
   "Jolt only: inline path caching. lein and bb never load .jolt files."
   (:require [clojure.test :refer [deftest is testing]]
             [com.rpl.specter :as s]
-            [com.rpl.specter.impl :as i]))
+            [com.rpl.specter.impl :as i]
+            [malai.core :as m]))
 
 (def data [{:a 1 :b 2} {:a 3 :b 4}])
 
@@ -101,3 +102,29 @@
     (is (nil? (:original-obj (meta f))))
     (is (= 5 (g 5)))
     (is (identical? f (i/original-obj g)))))
+
+(deftest clear-resets-the-cache
+  (reset! i/jolt-path-cache {})
+  (dotimes [_ 300] (kp :a))
+  (is (= 1 (compiled-dynamic)))
+  (is (nil? (m/clear-path-cache!)))
+  (is (empty? @i/jolt-path-cache))
+  (let [calls (atom 0) orig i/mk-dynamic-path-maker]
+    (with-redefs [i/mk-dynamic-path-maker (fn [& args] (swap! calls inc) (apply orig args))]
+      (is (every? true? (repeatedly 255 (fn [] (= [1 3] (kp :a))))))
+      (is (= 0 @calls) "counting starts over")
+      (is (= [1 3] (kp :a)))
+      (is (= 1 @calls) "and the 256th call compiles again"))))
+
+(defn helper [x] (* x 10))
+(defn- helper-site [] (s/select [s/ALL (s/view helper)] [1 2]))
+
+(deftest redefinition-needs-a-clear
+  (reset! i/jolt-path-cache {})
+  (is (= [10 20] (helper-site)))
+  (alter-var-root #'helper (constantly (fn [x] (* x 100))))
+  (try
+    (is (= [10 20] (helper-site)) "a cached path keeps what it saw, as on the JVM")
+    (m/clear-path-cache!)
+    (is (= [100 200] (helper-site)) "after clear-path-cache! the new fn is used")
+    (finally (alter-var-root #'helper (constantly (fn [x] (* x 10)))))))

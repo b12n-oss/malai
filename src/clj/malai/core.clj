@@ -34,11 +34,26 @@
 (defn- re-export!
   "Interns every public var of `from-ns` into this namespace with the same
    value and metadata. intern copies the symbol's metadata onto the var, so
-   :macro true keeps macros as macros on the JVM, Jolt and babashka."
+   :macro keeps macros as macros on the JVM, Jolt and babashka, and
+   :direct-nav keeps the inline-cache fast path for pred, terminal-val and
+   friends."
   [from-ns]
   (doseq [[sym v] (ns-publics from-ns)]
     (intern 'malai.core
-            (with-meta sym (select-keys (meta v) [:doc :arglists :macro :added :deprecated]))
+            (with-meta sym (dissoc (meta v) :ns :name))
             (deref v))))
 
 (re-export! 'com.rpl.specter)
+
+(defn clear-path-cache!
+  "Drops every cached path, so the next calls rebuild them. On Jolt a cached
+   path keeps what it saw on its first call: after redefining a fn or
+   navigator that a path uses (at the REPL, say), call this to make call
+   sites pick up the new one. Re-evaluating a defn that contains a select
+   adds a cache entry rather than replacing one, and this frees those too.
+   On the JVM and babashka it does nothing and returns nil, since their
+   caches live elsewhere (vars) or don't exist."
+  []
+  (when-let [cache (resolve 'com.rpl.specter.impl/jolt-path-cache)]
+    (reset! (deref cache) {}))
+  nil)
