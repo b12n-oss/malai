@@ -29,6 +29,50 @@
 
 #?(:jolt
    (do
+     ;; malai runs upstream's code where Jolt matches the JVM, which needs a
+     ;; Jolt with jolt-lang/jolt#1612 to #1616 fixed. An older Jolt would give
+     ;; wrong answers (every select wrapped in a vector), so check at load and
+     ;; fail loudly instead. Each probe counts a throw as missing.
+     (defn- jolt-fix-1612? [] (identical? [] []))
+     (defn- jolt-fix-1613? []
+       (reduced? (reduce + 0 (reify clojure.lang.IReduce
+                               (reduce [_ f] nil)
+                               (reduce [_ f init] (reduced init))))))
+     ;; eval, so this file still compiles on a Jolt without the static
+     (defn- jolt-fix-1614? [] (map? (eval 'clojure.lang.PersistentHashMap/EMPTY)))
+     (defn- jolt-fix-1615? [] (require 'clojure.core.reducers) true)
+     (defn- jolt-fix-1616? [] (let [f (fn [x] x)] (not (identical? f (with-meta f {})))))
+
+     (defn jolt-missing-fixes
+       "The jolt-lang/jolt issues (as \"#NNNN\" strings) whose fixes this Jolt
+        lacks; empty when malai can run here."
+       []
+       (vec (keep (fn [[issue probe]]
+                    (when-not (try (probe) (catch Throwable _ false))
+                      issue))
+                  [["#1612" jolt-fix-1612?] ["#1613" jolt-fix-1613?]
+                   ["#1614" jolt-fix-1614?] ["#1615" jolt-fix-1615?]
+                   ["#1616" jolt-fix-1616?]])))
+
+     (defn jolt-missing-fixes-message [missing version]
+       (str "Malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. "
+            "This Jolt (" version ") is missing: "
+            (clojure.string/join ", " missing) "."))
+
+     (defn jolt-fail-missing-fixes!
+       "Prints the missing-fixes message to stderr, then throws it. Jolt's REPL
+        shows only the wrapping load error, not this cause, so the stderr line
+        is what a REPL user sees."
+       [missing version]
+       (let [msg (jolt-missing-fixes-message missing version)]
+         (binding [*out* *err*] (println msg))
+         (throw (ex-info msg {:malai/missing-fixes (vec missing)}))))
+
+     (when-let [missing (seq (jolt-missing-fixes))]
+       (jolt-fail-missing-fixes! missing (or (System/getProperty "jolt.version") "unknown")))))
+
+#?(:jolt
+   (do
      ;; jolt: inline path caches, keyed by a constant each path expansion embeds
      (def jolt-path-cache (atom {}))
      (defn jolt-cache-get [k] (get @jolt-path-cache k))
@@ -305,8 +349,7 @@
        ~vals
        ~structure
        (fn [vals# structure#]
-        (if #?(:jolt (and (vector? vals#) (empty? vals#)) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
-                :default (identical? vals# []))
+        (if (identical? vals# [])
           (~result-fn structure#)
           (~result-fn (conj vals# structure#))))))
 
@@ -317,8 +360,7 @@
       vals
       structure
       (fn [vals structure]
-       (if #?(:jolt (and (vector? vals) (empty? vals)) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
-         :default (identical? vals []))
+       (if (identical? vals [])
          (result-fn structure)
          (result-fn (conj vals structure)))))))
 
@@ -384,20 +426,13 @@
       ([] (xf))
       ([result] (xf result))
       ([result input]
-        #?(:jolt
-           ;; jolt-lang/jolt#1613: jolt's reduce unwraps a Reduced returned by
-           ;; IReduce, so call the method to keep early termination visible
-           (.reduce (do-compiled-traverse* path input)
-                    (fn [r i] (xf r i))
-                    result)
-           :default
         (reduce
           (fn [r i]
             (xf r i))
           result
           ;; use this one to make sure reduced vals are propagated back
           (do-compiled-traverse* path input)
-          ))
+          )
         ))))
 
 (defn compiled-select* [path structure]
@@ -457,8 +492,7 @@
   (not (identical? NONE (compiled-select-any* path structure))))
 
 (defn terminal* [afn vals structure]
-  (if #?(:jolt (and (vector? vals) (empty? vals)) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
-         :default (identical? vals []))
+  (if (identical? vals [])
     (afn structure)
     (apply afn (conj vals structure))))
 
@@ -712,15 +746,7 @@
 ;; clojure's implementation of function metadata causes the function to do an
 ;; apply for every invocation
 (defn direct-nav-obj [o]
-  #?(:jolt
-     ;; jolt-lang/jolt#1616: with-meta on a fn changes that fn in place on jolt
-     ;; (the JVM returns a new fn), so wrap first, or :original-obj points at itself
-     (if (fn? o)
-       (with-meta (fn [& args] (apply o args))
-         (merge (meta o) {:direct-nav true :original-obj o}))
-       (vary-meta o merge {:direct-nav true :original-obj o}))
-     :default
-     (vary-meta o merge {:direct-nav true :original-obj o})))
+  (vary-meta o merge {:direct-nav true :original-obj o}))
 
 (defn maybe-direct-nav [obj direct-nav?]
   (if direct-nav?

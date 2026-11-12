@@ -31,26 +31,26 @@ and in Malai's smoke test it came out about the same size as a default build
 
 ## Timings
 
-`jolt bench` prints these on your machine. On Jolt 0.8.26, an Apple M1
+`jolt bench` prints these on your machine. On Jolt 0.8.27, an Apple M1
 Pro, a 3-map structure:
 
 | | µs per call |
 |---|---|
-| static path, cached | 8.38 |
-| dynamic path `(keypath k)`, cached | 2.09 |
-| the same two through `malai.core` | 8.26 and 2.20 |
-| static path compiled once by hand (`comp-paths`) | 7.74 |
-| hand-written `update`/`mapv` | 1.90 |
+| static path, cached | 6.84 |
+| dynamic path `(keypath k)`, cached | 1.91 |
+| the same two through `malai.core` | 6.98 and 1.96 |
+| static path compiled once by hand (`comp-paths`) | 6.66 |
+| hand-written `update`/`mapv` | 1.70 |
 
-Before caching (Malai 0.1), the same static path took 18.75 µs and the
-dynamic one 10.37 µs.
+Before caching (Malai 0.1 on Jolt 0.8.26), the same static path took
+18.75 µs and the dynamic one 10.37 µs.
 
 | Cold, after `clear-path-cache!` | ms |
 |---|---|
-| static path, first call | 0.171 |
-| dynamic path, first call | 0.114 |
-| a short CLI run: 10 dynamic calls | 0.198 |
-| 256 dynamic calls, the last one compiling | 4.700 |
+| static path, first call | 0.183 |
+| dynamic path, first call | 0.111 |
+| a short CLI run: 10 dynamic calls | 0.194 |
+| 256 dynamic calls, the last one compiling | 4.826 |
 
 Caching closes the gap to compiling the path yourself. Jolt's navigators
 are still slower than the JVM's (Specter 1.1.4 on the JVM ran the static path
@@ -82,22 +82,25 @@ Two timing details differ from the JVM, both because of the 256-call wait:
 Set `com.rpl.specter.impl/*DEBUG-INLINE-CACHING*` to true to see a call site
 that failed to compile. It stays uncached, and its answers stay correct.
 
-## Differences from the JVM
+## Which Jolt
 
-- **Collected vals built by your own navigator.** Specter treats `vals` as
-  "nothing collected" only when it is the JVM's shared empty vector. Malai
-  treats any empty vector that way on Jolt. This only matters for a rich
-  navigator you write that hands on a freshly built empty vector, such as
-  `(filterv pred vals)`; there Jolt returns the bare value where the JVM
-  wraps it in a vector.
-- **Jolt gaps worked around.** Each sits in a `:jolt` branch naming its Jolt
-  issue: [#1612](https://github.com/jolt-lang/jolt/issues/1612) (the empty
-  vector isn't shared), [#1613](https://github.com/jolt-lang/jolt/issues/1613)
-  (`reduce` unwraps a `Reduced` from an `IReduce`),
-  [#1614](https://github.com/jolt-lang/jolt/issues/1614) (most
-  `Persistent*/EMPTY` statics are missing),
-  [#1615](https://github.com/jolt-lang/jolt/issues/1615)
-  (`clojure.core.reducers` is missing) and
-  [#1616](https://github.com/jolt-lang/jolt/issues/1616) (`with-meta` on a fn
-  changes it in place). Fixes for all five are in review upstream; once a Jolt
-  release ships them, these branches go.
+Malai runs Specter's own code wherever Jolt behaves like the JVM, which
+needs Jolt 0.8.27 or newer: the first release with fixes for [#1612](https://github.com/jolt-lang/jolt/issues/1612),
+[#1613](https://github.com/jolt-lang/jolt/issues/1613),
+[#1614](https://github.com/jolt-lang/jolt/issues/1614),
+[#1615](https://github.com/jolt-lang/jolt/issues/1615) and
+[#1616](https://github.com/jolt-lang/jolt/issues/1616). On an older Jolt,
+loading Malai fails straight away with a message naming the fixes it lacks,
+rather than returning wrong answers:
+
+```
+Malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. This Jolt (v0.8.26) is missing: #1612, #1613, #1614, #1615, #1616.
+```
+
+At the Jolt REPL that line is printed above Jolt's own "Syntax error
+macroexpanding" message, because that Jolt hides a load error's own message
+([#1627](https://github.com/jolt-lang/jolt/issues/1627), fixed in 0.8.27).
+On Jolt 0.8.26, use Malai 0.2.
+
+With those fixes, Malai on Jolt gives the JVM's answers everywhere its tests
+and probes look, including collected `vals` built by your own navigators.

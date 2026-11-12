@@ -2,7 +2,7 @@
 ;; code needs the compiled classes in src/java.
 {:paths ["src/clj"]
  :deps {}
- :jolt/min-version "0.8.26"
+ :jolt/min-version "0.8.27"
  :aliases
  {;; jolt test: upstream's suite plus malai's own tests, on Jolt
   :test-jolt {:extra-paths ["test"]

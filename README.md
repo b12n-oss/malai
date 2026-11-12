@@ -17,7 +17,7 @@ behaves exactly as upstream's.
 **Which one do you need?** On the JVM, keep using `com.rpl/specter` from
 Clojars. In a babashka script, Specter loads from source as it is, with paths
 rebuilt on every call. On Jolt, use Malai, which caches paths per call site:
-a nested `transform` takes 8.38 µs here against 21.48 µs under babashka and
+a nested `transform` takes 7.20 µs here against 21.48 µs under babashka and
 2.58 µs on the JVM. [Specter on the JVM, babashka and
 Jolt](docs/guide/comparison.md) compares the three side by side.
 
@@ -27,7 +27,9 @@ Jolt](docs/guide/comparison.md) compares the three side by side.
 
 ## Install (Jolt)
 
-Add it to `deps.edn` as a git dependency. It needs Jolt 0.8.26 or newer.
+Add it to `deps.edn` as a git dependency. It needs Jolt 0.8.27 or newer,
+the first release with fixes for jolt-lang/jolt#1612 to #1616 (see the
+[Jolt guide](docs/guide/jolt.md#which-jolt)). On Jolt 0.8.26, use Malai 0.2.
 
 ```clojure
 {:deps {io.github.b12n-oss/malai {:git/url "https://github.com/b12n-oss/malai"
@@ -65,7 +67,7 @@ Malai's own version lives in `malai.version`, so `:refer :all` on
 
 ```clojure
 (require '[malai.version :as v])
-v/version       ;; => "0.2.0"
+v/version       ;; => "0.3.0"
 v/specter-base  ;; => "1.1.7-SNAPSHOT@6119462"
 ```
 
@@ -75,12 +77,12 @@ Paths are cached per call site, as on the JVM. A static path is cached on
 its first call; a path that closes over locals compiles after 256 calls,
 because its first compile costs about 2 ms and a short CLI run shouldn't pay
 it. With caching, a static `transform` in `jolt bench` dropped from 18.75 µs
-to 8.38 µs per call and a `(keypath k)` select from 10.37 µs to 2.09 µs.
+to 6.84 µs per call and a `(keypath k)` select from 10.37 µs to 1.91 µs.
 
 At the REPL, `(m/clear-path-cache!)` makes call sites pick up a fn or
 navigator you redefined. The [Jolt guide](docs/guide/jolt.md) has the
 details: how caching works, the full timings, REPL use, `jolt build`, and
-the few places Jolt still differs from the JVM.
+which Jolt Malai needs.
 
 ## Don't load two Specters
 

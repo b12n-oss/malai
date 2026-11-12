@@ -151,3 +151,26 @@
                   (dotimes [_ 300] (kp :a)))))]
     (is (re-find #"staying uncached" out))
     (is (re-find #"boom" out))))
+
+(deftest fixes-present
+  ;; Malai needs a Jolt with jolt-lang/jolt#1612 to #1616 fixed
+  (is (= [] (i/jolt-missing-fixes))))
+
+(deftest missing-fixes-are-named
+  (with-redefs [i/jolt-fix-1613? (constantly false)
+                i/jolt-fix-1616? (constantly false)]
+    (is (= ["#1613" "#1616"] (i/jolt-missing-fixes))))
+  (is (= (str "Malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. "
+              "This Jolt (v0.8.26) is missing: #1612, #1615.")
+         (i/jolt-missing-fixes-message ["#1612" "#1615"] "v0.8.26"))))
+
+(deftest missing-fixes-error-also-goes-to-stderr
+  ;; Jolt's REPL shows only the wrapping load error, not its cause, so the
+  ;; check prints its message to stderr before throwing
+  (let [err (java.io.StringWriter.)
+        thrown (binding [*err* err]
+                 (try (i/jolt-fail-missing-fixes! ["#1612"] "v0.8.26") nil
+                      (catch Exception e e)))]
+    (is (some? thrown))
+    (is (= {:malai/missing-fixes ["#1612"]} (ex-data thrown)))
+    (is (re-find #"This Jolt \(v0.8.26\) is missing: #1612\." (str err)))))
