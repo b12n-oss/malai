@@ -55,7 +55,7 @@
                    ["#1616" jolt-fix-1616?]])))
 
      (defn jolt-missing-fixes-message [missing version]
-       (str "malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. "
+       (str "Malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. "
             "This Jolt (" version ") is missing: "
             (clojure.string/join ", " missing) "."))
 

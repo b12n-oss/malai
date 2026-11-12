@@ -153,14 +153,14 @@
     (is (re-find #"boom" out))))
 
 (deftest fixes-present
-  ;; malai needs a Jolt with jolt-lang/jolt#1612 to #1616 fixed
+  ;; Malai needs a Jolt with jolt-lang/jolt#1612 to #1616 fixed
   (is (= [] (i/jolt-missing-fixes))))
 
 (deftest missing-fixes-are-named
   (with-redefs [i/jolt-fix-1613? (constantly false)
                 i/jolt-fix-1616? (constantly false)]
     (is (= ["#1613" "#1616"] (i/jolt-missing-fixes))))
-  (is (= (str "malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. "
+  (is (= (str "Malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. "
               "This Jolt (v0.8.26) is missing: #1612, #1615.")
          (i/jolt-missing-fixes-message ["#1612" "#1615"] "v0.8.26"))))
 

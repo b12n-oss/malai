@@ -95,7 +95,7 @@ loading Malai fails straight away with a message naming the fixes it lacks,
 rather than returning wrong answers:
 
 ```
-malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. This Jolt (v0.8.26) is missing: #1612, #1613, #1614, #1615, #1616.
+Malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. This Jolt (v0.8.26) is missing: #1612, #1613, #1614, #1615, #1616.
 ```
 
 At the Jolt REPL that line is printed above Jolt's own "Syntax error
