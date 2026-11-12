@@ -110,9 +110,12 @@
   (transform* [this vals structure next-fn] (next-fn (mk vals) structure)))
 
 (deftest collected-vals-shapes
-  ;; A rich navigator may hand on any vals it likes. Only an empty vector
-  ;; means "nothing collected"; nil and () get the structure conj'd on.
+  ;; A rich navigator may hand on any vals it likes. Only the shared empty
+  ;; vector means "nothing collected", as on the JVM; anything else, a
+  ;; freshly built empty vector included, gets the structure conj'd on.
   (is (= [1] (select (vals-as (fn [_] [])) 1)))
   (is (= [1] (select (vals-as (fn [_] (subvec [1] 0 0))) 1)))
   (is (= ['(1)] (select (vals-as (fn [_] nil)) 1)))
-  (is (= ['(1)] (select (vals-as (fn [_] ())) 1))))
+  (is (= ['(1)] (select (vals-as (fn [_] ())) 1)))
+  (is (= [[1]] (select (vals-as (fn [_] (persistent! (transient [])))) 1)))
+  (is (= [[1]] (select (vals-as (fn [v] (filterv odd? v))) 1))))

@@ -8,7 +8,7 @@
   #?(:clj (:use [com.rpl.specter.macros :only [defnav defrichnav]]
                 [com.rpl.specter.util-macros :only [doseqres]]))
   (:require [com.rpl.specter.impl :as i]
-            #?@(:bb [] :jolt []
+            #?@(:bb []
                 :clj [[clojure.core.reducers :as r]])))
 
 
@@ -171,8 +171,7 @@
               (assoc! m (nth newkv 0) (nth newkv 1)))))
 
         (transient
-          #?(:jolt {} ; jolt-lang/jolt#1614: no PersistentHashMap/EMPTY on jolt
-             :clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
+          #?(:clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
 
         structure)))
 
@@ -200,9 +199,6 @@
 
                :else
                #?(:bb (into empty-structure
-                            (comp (map next-fn) (filter not-NONE?))
-                            structure)
-                  :jolt (into empty-structure
                             (comp (map next-fn) (filter not-NONE?))
                             structure)
                   :clj (->> structure
@@ -366,8 +362,7 @@
               m
               (assoc! m k newv))))
         (transient
-          #?(:jolt {} ; jolt-lang/jolt#1614: no PersistentHashMap/EMPTY on jolt
-             :clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
+          #?(:clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
 
         structure)))
   (map-keys-transform [structure next-fn]
@@ -379,8 +374,7 @@
               m
               (assoc! m newk v))))
         (transient
-          #?(:jolt {} ; jolt-lang/jolt#1614: no PersistentHashMap/EMPTY on jolt
-             :clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
+          #?(:clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
 
         structure)))
 
