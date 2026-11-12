@@ -3,11 +3,13 @@
    tests and malai's own. Exits 0 only with no failures and no errors."
   (:require [clojure.test :as t]
             [com.rpl.specter.core-test]
-            [com.rpl.specter.zipper-test]))
+            [com.rpl.specter.zipper-test]
+            [malai.core-test]))
 
 (def test-nss
   '[com.rpl.specter.core-test
-    com.rpl.specter.zipper-test])
+    com.rpl.specter.zipper-test
+    malai.core-test])
 
 (defn -main [& _]
   (let [{:keys [test pass fail error] :as summary}
