@@ -109,6 +109,8 @@ Tasks run through Jolt, which reads `bb.edn`:
 | `jolt verify` | All three, stopping at the first failure |
 | `jolt bench` | Timings of cached and uncached paths, warm and cold (report only) |
 | `jolt smoke:build` | Builds a test binary with `jolt build`, default and `--closed-world`, and checks its output |
+| `jolt site:build` | Builds this project's docs site (`docs/guide`, `docs/site.edn`) into `_site/` with [jlt-commons/docs-engine](https://github.com/jlt-commons/docs-engine) |
+| `jolt site:serve` | Builds and serves it locally at `/malai/` (first free port from 3000, or `site:serve PORT`); `site:clean` deletes `_site/` |
 | `jolt metrics` | A jolt-metrics report (also `metrics:edn`, `metrics:html`); findings never fail it |
 | `jolt info` | Every task with its description |
 
