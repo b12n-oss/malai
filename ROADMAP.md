@@ -39,6 +39,10 @@ Small hardening left from the P2b review: the #1616 probe could also check
 that the original fn's metadata stays nil, and the #1615 probe could run
 `r/map`/`r/filter` rather than only loading the namespace.
 
+Once a Jolt release ships the fix for jolt-lang/jolt#1627 (PR #1633), the
+REPL shows a load error's own message, so `jolt-fail-missing-fixes!` no
+longer needs to print to stderr as well as throw.
+
 ## Blocked
 
 Nothing.
