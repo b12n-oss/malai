@@ -4,12 +4,14 @@
   (:require [clojure.test :as t]
             [com.rpl.specter.core-test]
             [com.rpl.specter.zipper-test]
-            [malai.core-test]))
+            [malai.core-test]
+            [malai.coverage-test]))
 
 (def test-nss
   '[com.rpl.specter.core-test
     com.rpl.specter.zipper-test
-    malai.core-test])
+    malai.core-test
+    malai.coverage-test])
 
 (defn -main [& _]
   (let [{:keys [test pass fail error] :as summary}
