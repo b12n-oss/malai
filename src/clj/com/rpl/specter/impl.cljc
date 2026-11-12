@@ -27,6 +27,13 @@
 ;; the original Specter, which shares these namespace names.
 (def ^:no-doc malai-marker true)
 
+#?(:jolt
+   (do
+     ;; jolt: inline path caches, keyed by a constant each path expansion embeds
+     (def jolt-path-cache (atom {}))
+     (defn jolt-cache-get [k] (get @jolt-path-cache k))
+     (defn jolt-cache-put! [k info] (swap! jolt-path-cache assoc k info) info)))
+
 (defn spy [e]
   (println "SPY:")
   (println (pr-str e))
@@ -705,7 +712,15 @@
 ;; clojure's implementation of function metadata causes the function to do an
 ;; apply for every invocation
 (defn direct-nav-obj [o]
-  (vary-meta o merge {:direct-nav true :original-obj o}))
+  #?(:jolt
+     ;; jolt-lang/jolt#1616: with-meta on a fn changes that fn in place on jolt
+     ;; (the JVM returns a new fn), so wrap first, or :original-obj points at itself
+     (if (fn? o)
+       (with-meta (fn [& args] (apply o args))
+         (merge (meta o) {:direct-nav true :original-obj o}))
+       (vary-meta o merge {:direct-nav true :original-obj o}))
+     :default
+     (vary-meta o merge {:direct-nav true :original-obj o})))
 
 (defn maybe-direct-nav [obj direct-nav?]
   (if direct-nav?

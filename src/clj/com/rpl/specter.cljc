@@ -212,7 +212,10 @@
          (let [[op & params] path]
            ;; need special case for 'fn since macroexpand does NOT
            ;; expand fn when run on cljs code, but it's also not considered a special symbol
-           (if (or (= 'fn op) (special-symbol? op))
+           (if (or (= 'fn op) (special-symbol? op)
+                   ;; jolt: no env-aware macroexpand-all, so a macro call stays
+                   ;; opaque and expands inside the eval'd fn, where locals are params
+                   #?(:jolt (and (symbol? op) (some-> (resolve op) meta :macro) true)))
              `(com.rpl.specter.impl/->SpecialFormUse ~path (quote ~path))
              `(com.rpl.specter.impl/->FnInvocation
                ~(ic-prepare-path locals-set op)
@@ -271,7 +274,27 @@
        of Specter provides huge speedup. This macro is automatically used by the
        select/transform/setval/replace-in/etc. macros."
        [& path]
-       #?(:bb `(comp-paths ~@path) :jolt `(comp-paths ~@path)
+       #?(:bb `(comp-paths ~@path)
+          :jolt
+          (let [local-syms (-> &env keys set)
+                used-locals (i/used-locals local-syms path)
+                prepared-path (ic-prepare-path local-syms (vec path))
+                possible-params (vec (ic-possible-params path))
+                cache-key (keyword (str *ns*) (str (gensym "pathcache")))
+                precompiled-sym (gensym "precompiled")]
+            `(let [info# (i/jolt-cache-get ~cache-key)
+                   info# (if (nil? info#)
+                           (i/jolt-cache-put! ~cache-key
+                                              (i/magic-precompilation
+                                               ~prepared-path
+                                               ~(str *ns*)
+                                               (quote ~used-locals)
+                                               (quote ~possible-params)))
+                           info#)
+                   ~precompiled-sym (i/cached-path-info-precompiled info#)]
+               (if (i/cached-path-info-dynamic? info#)
+                 (~precompiled-sym ~@used-locals)
+                 ~precompiled-sym)))
           :default
           (let [;;this is a hack, but the composition of &env is considered stable for cljs
                   platform (if (contains? &env :locals) :cljs :clj)

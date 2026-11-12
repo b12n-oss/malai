@@ -5,13 +5,17 @@
             [com.rpl.specter.core-test]
             [com.rpl.specter.zipper-test]
             [malai.core-test]
-            [malai.coverage-test]))
+            [malai.coverage-test]
+            [malai.caching-test]
+            [malai.cache-test]))
 
 (def test-nss
   '[com.rpl.specter.core-test
     com.rpl.specter.zipper-test
     malai.core-test
-    malai.coverage-test])
+    malai.coverage-test
+    malai.caching-test
+    malai.cache-test])
 
 (defn -main [& _]
   (let [{:keys [test pass fail error] :as summary}

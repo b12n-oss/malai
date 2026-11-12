@@ -1,0 +1,42 @@
+(ns malai.cache-test
+  "Jolt only: inline path caching. lein and bb never load .jolt files."
+  (:require [clojure.test :refer [deftest is testing]]
+            [com.rpl.specter :as s]
+            [com.rpl.specter.impl :as i]))
+
+(def data [{:a 1 :b 2} {:a 3 :b 4}])
+
+(defn- nested-view [outer] (s/select [s/ALL (s/view (fn [m] (s/select [(s/keypath outer)] m)))] data))
+(defn- with-collected [lim] (s/select [s/ALL (s/collect-one :a) (s/collected? [a] (> a lim)) :b] data))
+(defn- in-loop [] (vec (for [k [:a :b :c]] (s/select [s/ALL (s/keypath k)] data))))
+(defn- static-site [] (s/select [s/ALL :a] data))
+
+(defn- count-compiles
+  "Calls f n times on an empty cache. Returns [magic-precompilation calls,
+   cache entries, dynamic entries]."
+  [f n]
+  (reset! i/jolt-path-cache {})
+  (let [calls (atom 0)
+        orig i/magic-precompilation]
+    (with-redefs [i/magic-precompilation (fn [& args] (swap! calls inc) (apply orig args))]
+      (dotimes [_ n] (f)))
+    [@calls
+     (count @i/jolt-path-cache)
+     (count (filter (fn [[_ v]] (and (instance? com.rpl.specter.impl.CachedPathInfo v)
+                                     (i/cached-path-info-dynamic? v)))
+                    @i/jolt-path-cache))]))
+
+(deftest compiles-once-per-call-site
+  (testing "static" (is (= [1 1 0] (count-compiles static-site 5))))
+  (testing "nested view: outer path and inner select" (is (= [2 2 2] (count-compiles #(nested-view :a) 5))))
+  (testing "collected?" (is (= [1 1 1] (count-compiles #(with-collected 1) 5))))
+  (testing "for loop" (is (= [1 1 1] (count-compiles in-loop 5)))))
+
+(deftest fn-metadata-is-not-shared
+  ;; jolt-lang/jolt#1616: with-meta on a fn changes it in place on jolt
+  (let [f (fn [x] x)
+        g (i/direct-nav-obj f)]
+    (is (not (identical? f g)))
+    (is (nil? (:original-obj (meta f))))
+    (is (= 5 (g 5)))
+    (is (identical? f (i/original-obj g)))))
