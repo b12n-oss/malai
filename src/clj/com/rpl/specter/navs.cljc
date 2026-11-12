@@ -8,7 +8,7 @@
   #?(:clj (:use [com.rpl.specter.macros :only [defnav defrichnav]]
                 [com.rpl.specter.util-macros :only [doseqres]]))
   (:require [com.rpl.specter.impl :as i]
-            #?@(:bb []
+            #?@(:bb [] :jolt []
                 :clj [[clojure.core.reducers :as r]])))
 
 
@@ -114,6 +114,8 @@
   #?(:bb
      (all-transform [structure next-fn]
                     (non-transient-map-all-transform structure next-fn {}))
+     :jolt (all-transform [structure next-fn]
+                    (non-transient-map-all-transform structure next-fn {}))
      :clj
      (all-transform [structure next-fn]
        (let [k-it (.keyIterator structure)
@@ -169,7 +171,8 @@
               (assoc! m (nth newkv 0) (nth newkv 1)))))
 
         (transient
-          #?(:clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
+          #?(:jolt {} ; jolt-lang/jolt#1614: no PersistentHashMap/EMPTY on jolt
+             :clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
 
         structure)))
 
@@ -197,6 +200,9 @@
 
                :else
                #?(:bb (into empty-structure
+                            (comp (map next-fn) (filter not-NONE?))
+                            structure)
+                  :jolt (into empty-structure
                             (comp (map next-fn) (filter not-NONE?))
                             structure)
                   :clj (->> structure
@@ -272,6 +278,8 @@
   #?(:bb
      (map-vals-transform [structure next-fn]
                          (map-vals-non-transient-transform structure {} next-fn))
+     :jolt (map-vals-transform [structure next-fn]
+                         (map-vals-non-transient-transform structure {} next-fn))
      :clj
      (map-vals-transform [structure next-fn]
        (let [k-it (.keyIterator structure)
@@ -301,6 +309,8 @@
           (clojure.lang.PersistentArrayMap. array)))))
   #?(:bb
      (map-keys-transform [structure next-fn]
+                         (map-keys-non-transient-transform structure {} next-fn))
+     :jolt (map-keys-transform [structure next-fn]
                          (map-keys-non-transient-transform structure {} next-fn))
      :clj
      (map-keys-transform [structure next-fn]
@@ -356,7 +366,8 @@
               m
               (assoc! m k newv))))
         (transient
-          #?(:clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
+          #?(:jolt {} ; jolt-lang/jolt#1614: no PersistentHashMap/EMPTY on jolt
+             :clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
 
         structure)))
   (map-keys-transform [structure next-fn]
@@ -368,7 +379,8 @@
               m
               (assoc! m newk v))))
         (transient
-          #?(:clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
+          #?(:jolt {} ; jolt-lang/jolt#1614: no PersistentHashMap/EMPTY on jolt
+             :clj clojure.lang.PersistentHashMap/EMPTY :cljs cljs.core.PersistentHashMap.EMPTY))
 
         structure)))
 
@@ -528,6 +540,8 @@
 #?(:bb
    (defn vec-count [v]
      (count v))
+   :jolt (defn vec-count [v]
+     (count v))
 
    :clj
    (defn vec-count [^clojure.lang.IPersistentVector v]
@@ -582,6 +596,8 @@
 
 #?(:bb
    (defn transient-vec-count [v]
+     (count v))
+   :jolt (defn transient-vec-count [v]
      (count v))
 
    :clj

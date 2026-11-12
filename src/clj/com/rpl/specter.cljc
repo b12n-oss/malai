@@ -271,7 +271,7 @@
        of Specter provides huge speedup. This macro is automatically used by the
        select/transform/setval/replace-in/etc. macros."
        [& path]
-       #?(:bb `(comp-paths ~@path)
+       #?(:bb `(comp-paths ~@path) :jolt `(comp-paths ~@path)
           :default
           (let [;;this is a hack, but the composition of &env is considered stable for cljs
                   platform (if (contains? &env :locals) :cljs :clj)

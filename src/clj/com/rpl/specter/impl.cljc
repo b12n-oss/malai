@@ -15,10 +15,10 @@
             #?(:clj [clojure.pprint :as pp])
             [clojure.string :as s]
             [clojure.walk :as walk]
-            #?(:bb [clojure.walk :as riddley]
+            #?(:bb [clojure.walk :as riddley] :jolt [clojure.walk :as riddley]
                :clj [riddley.walk :as riddley]))
 
-  #?@(:bb []
+  #?@(:bb [] :jolt []
       :clj [(:import [com.rpl.specter Util MutableCell])]))
 
 (def NONE ::NONE)
@@ -86,6 +86,8 @@
 #?(:bb
    (defmacro fast-object-array [i]
      `(object-array ~i))
+   :jolt (defmacro fast-object-array [i]
+     `(object-array ~i))
    :clj
    (defmacro fast-object-array [i]
      `(com.rpl.specter.Util/makeObjectArray ~i)))
@@ -104,7 +106,7 @@
        (if (= platform :cljs)
          `(p/select* ~this ~@args)
          `(let [~hinted ~this]
-            (#?(:bb p/select*
+            (#?(:bb p/select* :jolt p/select*
                 :clj .select*) ~hinted ~@args)))))
    :cljs
    (defn exec-select* [this vals structure next-fn]
@@ -119,7 +121,7 @@
        (if (= platform :cljs)
          `(p/transform* ~this ~@args)
          `(let [~hinted ~this]
-            (#?(:bb p/transform*
+            (#?(:bb p/transform* :jolt p/transform*
                 :clj .transform*) ~hinted ~@args)))))
 
    :cljs
@@ -220,7 +222,7 @@
 
 
 #?(:bb
-   (defrecord MutableCell [x])
+   (defrecord MutableCell [x]) :jolt (defrecord MutableCell [x])
    :cljs
    (deftype MutableCell [^:volatile-mutable q]
      PMutableCell
@@ -229,6 +231,9 @@
 
 #?(:bb
    (defn mutable-cell
+     ([] (mutable-cell nil))
+     ([v] (MutableCell. (volatile! v))))
+   :jolt (defn mutable-cell
      ([] (mutable-cell nil))
      ([v] (MutableCell. (volatile! v))))
 
@@ -246,6 +251,8 @@
 #?(:bb
    (defn set-cell! [^MutableCell c v]
      (vreset! (:x c) v))
+   :jolt (defn set-cell! [^MutableCell c v]
+     (vreset! (:x c) v))
 
    :clj
    (defn set-cell! [^MutableCell c v]
@@ -258,6 +265,8 @@
 
 #?(:bb
    (defn get-cell [^MutableCell c]
+     @(:x c))
+   :jolt (defn get-cell [^MutableCell c]
      @(:x c))
 
    :clj
@@ -285,7 +294,8 @@
        ~vals
        ~structure
        (fn [vals# structure#]
-        (if (identical? vals# [])
+        (if #?(:jolt (empty? vals#) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
+                :default (identical? vals# []))
           (~result-fn structure#)
           (~result-fn (conj vals# structure#))))))
 
@@ -296,7 +306,8 @@
       vals
       structure
       (fn [vals structure]
-       (if (identical? vals [])
+       (if #?(:jolt (empty? vals) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
+         :default (identical? vals []))
          (result-fn structure)
          (result-fn (conj vals structure)))))))
 
@@ -308,7 +319,7 @@
   (reify #?(:clj clojure.lang.IReduce :cljs cljs.core/IReduce)
     (#?(:clj reduce :cljs -reduce)
         [this afn]
-      #?(:bb (reduce afn (afn) this)
+      #?(:bb (reduce afn (afn) this) :jolt (reduce afn (afn) this)
          :default
          (#?(:clj .reduce :cljs -reduce) this afn (afn))))
     (#?(:clj reduce :cljs -reduce)
@@ -330,6 +341,8 @@
 :bb
 (defn- call-reduce-interface [^clojure.lang.IReduce traverser afn start]
   (reduce afn start traverser))
+:jolt (defn- call-reduce-interface [^clojure.lang.IReduce traverser afn start]
+  (reduce afn start traverser))
 :clj
 (defn- call-reduce-interface [^clojure.lang.IReduce traverser afn start]
   (.reduce traverser afn start)
@@ -345,7 +358,7 @@
     (reify #?(:clj clojure.lang.IReduce :cljs cljs.core/IReduce)
       (#?(:clj reduce :cljs -reduce)
           [this afn]
-        #?(:bb (reduce afn (afn) this)
+        #?(:bb (reduce afn (afn) this) :jolt (reduce afn (afn) this)
            :default
            (#?(:clj .reduce :cljs -reduce) this afn (afn))))
       (#?(:clj reduce :cljs -reduce)
@@ -360,13 +373,20 @@
       ([] (xf))
       ([result] (xf result))
       ([result input]
+        #?(:jolt
+           ;; jolt-lang/jolt#1613: jolt's reduce unwraps a Reduced returned by
+           ;; IReduce, so call the method to keep early termination visible
+           (.reduce (do-compiled-traverse* path input)
+                    (fn [r i] (xf r i))
+                    result)
+           :default
         (reduce
           (fn [r i]
             (xf r i))
           result
           ;; use this one to make sure reduced vals are propagated back
           (do-compiled-traverse* path input)
-          )
+          ))
         ))))
 
 (defn compiled-select* [path structure]
@@ -426,7 +446,8 @@
   (not (identical? NONE (compiled-select-any* path structure))))
 
 (defn terminal* [afn vals structure]
-  (if (identical? vals [])
+  (if #?(:jolt (empty? vals) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
+         :default (identical? vals []))
     (afn structure)
     (apply afn (conj vals structure))))
 
