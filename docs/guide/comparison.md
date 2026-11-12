@@ -20,13 +20,14 @@ and that decides how fast a path is and what it costs to start.
 
 `jolt bench` on Jolt, the same benchmark run by `bb` on babashka, and
 Specter 1.1.4 on the JVM with the same data and paths. An Apple M1 Pro,
-µs per call, after warm-up (Jolt 0.8.26, babashka 1.13.220, Clojure 1.12.3):
+µs per call, after warm-up (a Jolt with the fixes malai needs, pre-release
+`v0.8.26-36-g2337c3fa`; babashka 1.13.220; Clojure 1.12.3):
 
 | | JVM | babashka | Jolt (malai) |
 |---|---|---|---|
-| static path `[MAP-VALS ALL :y ALL even?]`, `transform` | 2.58 | 21.48 | 8.38 |
-| dynamic path `[MAP-VALS ALL (keypath k)]`, `select` | 0.81 | 15.32 | 2.09 |
-| hand-written `update`/`mapv`, same result | 1.06 | 1.95 | 1.90 |
+| static path `[MAP-VALS ALL :y ALL even?]`, `transform` | 2.58 | 21.48 | 7.20 |
+| dynamic path `[MAP-VALS ALL (keypath k)]`, `select` | 0.81 | 15.32 | 1.99 |
+| hand-written `update`/`mapv`, same result | 1.06 | 1.95 | 1.67 |
 
 Caching is most of the gap between babashka and Jolt: babashka rebuilds the
 path on every call, as malai 0.1 did on Jolt (18.75 µs and 10.37 µs). What

@@ -17,7 +17,7 @@ behaves exactly as upstream's.
 **Which one do you need?** On the JVM, keep using `com.rpl/specter` from
 Clojars. In a babashka script, Specter loads from source as it is, with paths
 rebuilt on every call. On Jolt, use malai, which caches paths per call site:
-a nested `transform` takes 8.38 µs here against 21.48 µs under babashka and
+a nested `transform` takes 7.20 µs here against 21.48 µs under babashka and
 2.58 µs on the JVM. [Specter on the JVM, babashka and
 Jolt](docs/guide/comparison.md) compares the three side by side.
 
