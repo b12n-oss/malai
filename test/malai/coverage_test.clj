@@ -104,3 +104,15 @@
   (let [d (nest [1] 200)]
     (is (= [1] (select TREE d)))
     (is (= (nest [2] 200) (transform (walker number?) inc d)))))
+
+(defrichnav vals-as [mk]
+  (select* [this vals structure next-fn] (next-fn (mk vals) structure))
+  (transform* [this vals structure next-fn] (next-fn (mk vals) structure)))
+
+(deftest collected-vals-shapes
+  ;; A rich navigator may hand on any vals it likes. Only an empty vector
+  ;; means "nothing collected"; nil and () get the structure conj'd on.
+  (is (= [1] (select (vals-as (fn [_] [])) 1)))
+  (is (= [1] (select (vals-as (fn [_] (subvec [1] 0 0))) 1)))
+  (is (= ['(1)] (select (vals-as (fn [_] nil)) 1)))
+  (is (= ['(1)] (select (vals-as (fn [_] ())) 1))))

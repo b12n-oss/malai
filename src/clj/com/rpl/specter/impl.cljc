@@ -298,7 +298,7 @@
        ~vals
        ~structure
        (fn [vals# structure#]
-        (if #?(:jolt (empty? vals#) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
+        (if #?(:jolt (and (vector? vals#) (empty? vals#)) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
                 :default (identical? vals# []))
           (~result-fn structure#)
           (~result-fn (conj vals# structure#))))))
@@ -310,7 +310,7 @@
       vals
       structure
       (fn [vals structure]
-       (if #?(:jolt (empty? vals) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
+       (if #?(:jolt (and (vector? vals) (empty? vals)) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
          :default (identical? vals []))
          (result-fn structure)
          (result-fn (conj vals structure)))))))
@@ -450,7 +450,7 @@
   (not (identical? NONE (compiled-select-any* path structure))))
 
 (defn terminal* [afn vals structure]
-  (if #?(:jolt (empty? vals) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
+  (if #?(:jolt (and (vector? vals) (empty? vals)) ; jolt-lang/jolt#1612: (identical? [] []) is false on jolt
          :default (identical? vals []))
     (afn structure)
     (apply afn (conj vals structure))))
