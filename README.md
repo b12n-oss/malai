@@ -20,7 +20,9 @@ behaves exactly as upstream's.
 
 ## Install (Jolt)
 
-Add it to `deps.edn` as a git dependency. It needs Jolt 0.8.26 or newer.
+Add it to `deps.edn` as a git dependency. It needs a Jolt with fixes for
+jolt-lang/jolt#1612 to #1616 (see the [Jolt guide](docs/guide/jolt.md#which-jolt));
+malai 0.2 runs on Jolt 0.8.26.
 
 ```clojure
 {:deps {io.github.b12n-oss/malai {:git/url "https://github.com/b12n-oss/malai"
@@ -58,7 +60,7 @@ malai's own version lives in `malai.version`, so `:refer :all` on
 
 ```clojure
 (require '[malai.version :as v])
-v/version       ;; => "0.2.0"
+v/version       ;; => "0.3.0"
 v/specter-base  ;; => "1.1.7-SNAPSHOT@6119462"
 ```
 
@@ -68,12 +70,12 @@ Paths are cached per call site, as on the JVM. A static path is cached on
 its first call; a path that closes over locals compiles after 256 calls,
 because its first compile costs about 2 ms and a short CLI run shouldn't pay
 it. With caching, a static `transform` in `jolt bench` dropped from 18.75 µs
-to 8.38 µs per call and a `(keypath k)` select from 10.37 µs to 2.09 µs.
+to 7.20 µs per call and a `(keypath k)` select from 10.37 µs to 1.99 µs.
 
 At the REPL, `(m/clear-path-cache!)` makes call sites pick up a fn or
 navigator you redefined. The [Jolt guide](docs/guide/jolt.md) has the
 details: how caching works, the full timings, REPL use, `jolt build`, and
-the few places Jolt still differs from the JVM.
+which Jolt malai needs.
 
 ## Don't load two Specters
 

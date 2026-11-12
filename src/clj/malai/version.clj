@@ -2,7 +2,7 @@
   "malai's version and the upstream Specter it is based on. Kept out of
    malai.core so :refer :all on malai.core takes only Specter's names.")
 
-(def version "malai's version." "0.2.0")
+(def version "malai's version." "0.3.0")
 
 (def specter-base
   "The upstream Specter version and commit malai is based on."

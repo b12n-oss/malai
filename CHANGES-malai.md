@@ -2,6 +2,16 @@
 
 Upstream Specter's history is in `CHANGES.md`, unchanged.
 
+## 0.3.0 (unreleased, branch p2b-drop-workarounds)
+
+- Needs a Jolt with fixes for jolt-lang/jolt#1612 to #1616 (PRs #1617,
+  #1618, #1619, #1621, #1622). malai's workarounds for them are gone, so Jolt
+  runs Specter's own code there.
+- Collected `vals` built as a fresh empty vector by your own navigator now
+  match the JVM, which closes 0.1's one known difference.
+- On an older Jolt, loading fails with a message naming the missing fixes
+  (also printed to stderr, since Jolt's REPL hides the cause: #1627).
+
 ## 0.2.0 (unreleased)
 
 - Inline path caching on Jolt. Static paths are cached on the first call; a

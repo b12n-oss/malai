@@ -31,7 +31,7 @@
   (is (= [1 2] (m/setval [m/ALL nil?] m/NONE [1 nil 2]))))
 
 (deftest version-strings
-  (is (= "0.2.0" malai.version/version))
+  (is (= "0.3.0" malai.version/version))
   (is (= "1.1.7-SNAPSHOT@6119462" malai.version/specter-base)))
 
 (deftest refer-all-leaves-common-names-free
