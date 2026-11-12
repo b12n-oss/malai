@@ -50,7 +50,7 @@
     (testing "malai's impl source passes"
       (is (nil? (check "(ns com.rpl.specter.impl) (def ^:no-doc malai-marker true)"))))
     (testing "the original's impl source fails before it is loaded"
-      (is (thrown-with-msg? Exception #"^malai: com.rpl.specter was loaded from the original Specter"
+      (is (thrown-with-msg? Exception #"^Malai: com.rpl.specter was loaded from the original Specter"
                             (check "(ns com.rpl.specter.impl) (def NONE ::NONE)"))))
     (testing "no source on the path (an AOT jar) defers to the post-load check"
       (is (nil? (check nil))))))
@@ -65,7 +65,7 @@
       ;; a load error arrives wrapped (CompilerException on the JVM, a
       ;; syntax-error wrapper on Jolt), so look down the cause chain
       (is (some #(some-> ^Throwable % .getMessage
-                         (.startsWith "malai: com.rpl.specter was loaded from the original Specter"))
+                         (.startsWith "Malai: com.rpl.specter was loaded from the original Specter"))
                 (take-while some? (iterate (fn [^Throwable t] (.getCause t)) e)))))
     (finally
       (intern 'com.rpl.specter.impl (with-meta 'malai-marker {:no-doc true}) true)

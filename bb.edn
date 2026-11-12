@@ -56,7 +56,7 @@
 
   info {:doc "List the tasks with what each one does"
         :task (let [tasks (:tasks (edn/read-string (slurp "bb.edn")))]
-                (println "malai tasks (run as: jolt <task>)")
+                (println "Malai tasks (run as: jolt <task>)")
                 (doseq [[k v] (sort-by (fn [[k _]] (str k)) tasks)
                         :when (and (symbol? k) (map? v))]
                   (println (format "  %-14s %s" k (:doc v "")))))}
