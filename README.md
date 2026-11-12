@@ -1,45 +1,45 @@
-<p align="center"><img src="docs/images/logo.svg" alt="malai logo: a short jasmine garland, white buds and two open five-petal blooms on a red thread, tied at the bottom with a marigold and a short tassel" width="160"></p>
+<p align="center"><img src="docs/images/logo.svg" alt="Malai logo: a short jasmine garland, white buds and two open five-petal blooms on a red thread, tied at the bottom with a marigold and a short tassel" width="160"></p>
 
-<h1 align="center">malai</h1>
+<h1 align="center">Malai</h1>
 
-malai is [Specter](https://github.com/redplanetlabs/specter) running on
+Malai is [Specter](https://github.com/redplanetlabs/specter) running on
 [Jolt](https://github.com/jolt-lang/jolt), the native Clojure on Chez Scheme.
 It's a fork that keeps Specter's own namespaces, so code that requires
 `com.rpl.specter` runs on Jolt with no changes to its `require` lines. There's
-also `malai.core`, which re-exports the same API under malai's own name.
+also `malai.core`, which re-exports the same API under Malai's own name.
 
 Specter is Nathan Marz's library, from Red Planet Labs, and everything good
-about it is theirs. malai adds `#?(:jolt ...)` reader branches next to the
+about it is theirs. Malai adds `#?(:jolt ...)` reader branches next to the
 `:bb` ones Specter already had, plus a few workarounds for places where Jolt
 still differs from the JVM. On the JVM, ClojureScript and babashka the code
 behaves exactly as upstream's.
 
 **Which one do you need?** On the JVM, keep using `com.rpl/specter` from
 Clojars. In a babashka script, Specter loads from source as it is, with paths
-rebuilt on every call. On Jolt, use malai, which caches paths per call site:
+rebuilt on every call. On Jolt, use Malai, which caches paths per call site:
 a nested `transform` takes 7.20 µs here against 21.48 µs under babashka and
 2.58 µs on the JVM. [Specter on the JVM, babashka and
 Jolt](docs/guide/comparison.md) compares the three side by side.
 
 > [!NOTE]
-> malai is private for now. The coordinates below work for people with access
+> Malai is private for now. The coordinates below work for people with access
 > to `b12n-oss/malai`.
 
 ## Install (Jolt)
 
 Add it to `deps.edn` as a git dependency. It needs a Jolt with fixes for
 jolt-lang/jolt#1612 to #1616 (see the [Jolt guide](docs/guide/jolt.md#which-jolt));
-malai 0.2 runs on Jolt 0.8.26.
+Malai 0.2 runs on Jolt 0.8.26.
 
 ```clojure
 {:deps {io.github.b12n-oss/malai {:git/url "https://github.com/b12n-oss/malai"
                                  :git/sha "<commit>"}}}
 ```
 
-**Use malai on Jolt and `com.rpl/specter` from Clojars on the JVM.** malai's
+**Use Malai on Jolt and `com.rpl/specter` from Clojars on the JVM.** Malai's
 `deps.edn` is for Jolt. Specter's JVM code needs two small Java classes
 compiled first, which `lein` does from `project.clj` but a `deps.edn` git
-dependency doesn't, so a JVM project that pulled malai through `deps.edn`
+dependency doesn't, so a JVM project that pulled Malai through `deps.edn`
 would fail to load.
 
 ## Usage
@@ -53,7 +53,7 @@ Existing Specter code works as it is:
 ;; => {:a [1 3 3], :b [5 5]}
 ```
 
-or through malai's name:
+or through Malai's name:
 
 ```clojure
 (require '[malai.core :as m])
@@ -62,7 +62,7 @@ or through malai's name:
 ;; => [1 3]
 ```
 
-malai's own version lives in `malai.version`, so `:refer :all` on
+Malai's own version lives in `malai.version`, so `:refer :all` on
 `malai.core` brings in Specter's names and nothing else:
 
 ```clojure
@@ -82,17 +82,17 @@ to 7.20 µs per call and a `(keypath k)` select from 10.37 µs to 1.99 µs.
 At the REPL, `(m/clear-path-cache!)` makes call sites pick up a fn or
 navigator you redefined. The [Jolt guide](docs/guide/jolt.md) has the
 details: how caching works, the full timings, REPL use, `jolt build`, and
-which Jolt malai needs.
+which Jolt Malai needs.
 
 ## Don't load two Specters
 
-malai and the original Specter provide the same namespaces. If a project gets
+Malai and the original Specter provide the same namespaces. If a project gets
 both, for instance because another library depends on `com.rpl/specter`,
 whichever copy loads first wins and nothing warns you. So check your
-dependency tree before adding malai, and keep `com.rpl/specter` out of a Jolt
+dependency tree before adding Malai, and keep `com.rpl/specter` out of a Jolt
 project.
 
-`malai.core` checks for a marker var that only malai's `com.rpl.specter.impl`
+`malai.core` checks for a marker var that only Malai's `com.rpl.specter.impl`
 has, and it throws when the loaded copy is the original:
 
 ```

@@ -1,6 +1,6 @@
 # Specter on Jolt
 
-This page covers only what is different about running Specter through malai
+This page covers only what is different about running Specter through Malai
 on [Jolt](https://github.com/jolt-lang/jolt). For Specter itself (navigators,
 `select`, `transform`, writing your own navigators) read
 [upstream's docs](https://github.com/redplanetlabs/specter/wiki); everything
@@ -9,7 +9,7 @@ there applies.
 ## How paths are cached
 
 On the JVM, Specter compiles the path at each `select`/`transform` call site
-once and reuses it. malai does the same on Jolt, with one twist for paths
+once and reuses it. Malai does the same on Jolt, with one twist for paths
 that use local values.
 
 - **A static path** such as `[MAP-VALS ALL :y ALL even?]` is cached on its
@@ -24,15 +24,15 @@ that use local values.
 
 The cache lives in a table at run time, so it works the same under
 `jolt -M` and in a `jolt build` binary, `--closed-world` included. With
-`--closed-world` Jolt reports that it skipped tree-shaking, because malai's
+`--closed-world` Jolt reports that it skipped tree-shaking, because Malai's
 code calls `eval`, `resolve` and `intern` at run time. The binary is correct,
-and in malai's smoke test it came out about the same size as a default build
+and in Malai's smoke test it came out about the same size as a default build
 (22.8 MB against 22.9 MB).
 
 ## Timings
 
 `jolt bench` prints these on your machine. On an Apple M1 Pro, a 3-map
-structure, with a Jolt that has the fixes malai needs (the pre-release
+structure, with a Jolt that has the fixes Malai needs (the pre-release
 `v0.8.26-36-g2337c3fa`):
 
 | | µs per call |
@@ -43,7 +43,7 @@ structure, with a Jolt that has the fixes malai needs (the pre-release
 | static path compiled once by hand (`comp-paths`) | 6.59 |
 | hand-written `update`/`mapv` | 1.67 |
 
-Before caching (malai 0.1 on Jolt 0.8.26), the same static path took
+Before caching (Malai 0.1 on Jolt 0.8.26), the same static path took
 18.75 µs and the dynamic one 10.37 µs.
 
 | Cold, after `clear-path-cache!` | ms |
@@ -55,7 +55,7 @@ Before caching (malai 0.1 on Jolt 0.8.26), the same static path took
 
 Caching closes the gap to compiling the path yourself. Jolt's navigators
 are still slower than the JVM's (Specter 1.1.4 on the JVM ran the static path
-in about 3 µs), and malai doesn't try to change that.
+in about 3 µs), and Malai doesn't try to change that.
 
 ## At the REPL
 
@@ -85,13 +85,13 @@ that failed to compile. It stays uncached, and its answers stay correct.
 
 ## Which Jolt
 
-malai runs Specter's own code wherever Jolt behaves like the JVM, which
+Malai runs Specter's own code wherever Jolt behaves like the JVM, which
 needs a Jolt with fixes for [#1612](https://github.com/jolt-lang/jolt/issues/1612),
 [#1613](https://github.com/jolt-lang/jolt/issues/1613),
 [#1614](https://github.com/jolt-lang/jolt/issues/1614),
 [#1615](https://github.com/jolt-lang/jolt/issues/1615) and
 [#1616](https://github.com/jolt-lang/jolt/issues/1616). On an older Jolt,
-loading malai fails straight away with a message naming the fixes it lacks,
+loading Malai fails straight away with a message naming the fixes it lacks,
 rather than returning wrong answers:
 
 ```
@@ -100,7 +100,7 @@ malai needs a Jolt release with fixes for jolt-lang/jolt#1612 to #1616. This Jol
 
 At the Jolt REPL that line is printed above Jolt's own "Syntax error
 macroexpanding" message ([#1627](https://github.com/jolt-lang/jolt/issues/1627)).
-malai 0.2 still runs on Jolt 0.8.26.
+Malai 0.2 still runs on Jolt 0.8.26.
 
-With those fixes, malai on Jolt gives the JVM's answers everywhere its tests
+With those fixes, Malai on Jolt gives the JVM's answers everywhere its tests
 and probes look, including collected `vals` built by your own navigators.

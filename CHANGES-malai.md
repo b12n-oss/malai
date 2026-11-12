@@ -1,11 +1,11 @@
-# malai changes
+# Malai changes
 
 Upstream Specter's history is in `CHANGES.md`, unchanged.
 
 ## 0.3.0 (unreleased, branch p2b-drop-workarounds)
 
 - Needs a Jolt with fixes for jolt-lang/jolt#1612 to #1616 (PRs #1617,
-  #1618, #1619, #1621, #1622). malai's workarounds for them are gone, so Jolt
+  #1618, #1619, #1621, #1622). Malai's workarounds for them are gone, so Jolt
   runs Specter's own code there.
 - Collected `vals` built as a fresh empty vector by your own navigator now
   match the JVM, which closes 0.1's one known difference.
@@ -33,7 +33,7 @@ Upstream Specter's history is in `CHANGES.md`, unchanged.
   and #1615. Upstream's suite passes on Jolt, the JVM and babashka.
 - No inline path caching on Jolt yet; paths are built on every call.
 - `malai.core` re-exports every public var of `com.rpl.specter`, and
-  refuses to load (with a malai error) when the `com.rpl.specter` on the
+  refuses to load (with a Malai error) when the `com.rpl.specter` on the
   path is the original Specter.
 - `malai.version` holds `version` and `specter-base`.
 - `deps.edn` for Jolt users; `bb.edn` tasks run as `jolt <task>` (`test`,
