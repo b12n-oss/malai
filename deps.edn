@@ -8,6 +8,11 @@
   :test-jolt {:extra-paths ["test"]
               :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}}
               :main-opts ["-m" "malai.jolt-runner"]}
+  ;; jolt bench: timings of cached and uncached paths (report only)
+  :bench {:extra-paths ["bench"]
+          :main-opts ["-m" "malai.bench"]}
+  ;; jolt smoke:build: a jolt build binary that exercises path caching
+  :smoke {:extra-paths ["smoke"]}
   ;; Code metrics report (jolt metrics): jolt-metrics' CLI. Report only.
   :metrics {:extra-deps {io.github.jlt-commons/jolt-metrics
                          {:git/url "https://github.com/jlt-commons/jolt-metrics"

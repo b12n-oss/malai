@@ -42,6 +42,26 @@
                   (println (str "== " t))
                   (shell (if under-bb? "bb" (jolt-bin)) t))}
 
+  bench {:doc "Timings of Specter paths on Jolt, cached and not, warm and cold (bench/malai/bench.clj; report only)"
+         :task (shell (jolt-bin) "-M:bench")}
+
+  smoke:build {:doc "Build smoke/malai/smoke.clj with jolt build, default and --closed-world, run both and check their output (about 15 s per build)"
+               :task (let [expected (str ":nested-view [[1] [3]]\n"
+                                         ":collected [[3 4]]\n"
+                                         ":loop [[1 3] [2 4] [nil nil]]\n"
+                                         ":malai-core [3]\n"
+                                         ":compiled-dynamic-sites 5\n")]
+                       (shell "mkdir -p target")
+                       (doseq [[out flags] [["target/smoke-default" []]
+                                            ["target/smoke-cw" ["--closed-world"]]]]
+                         (println (str "== " out))
+                         (apply shell (jolt-bin) "-A:smoke" "build" "-m" "malai.smoke" "-o" out flags)
+                         (let [got (:out (shell {:out :string} out))]
+                           (when-not (= expected got)
+                             (println (str "smoke:build: " out " printed:\n" got "expected:\n" expected))
+                             (System/exit 1))
+                           (println "ok"))))}
+
   ;; Report only: findings never fail these. metrics.cli exits non-zero
   ;; only on bad usage or a missing directory, and that exit passes through.
   metrics {:doc "jolt-metrics report over the repo (Markdown; findings never fail it). Extra args go to metrics.cli: an output file (its extension picks the format), --top N, --no-git, --exclude GLOB"
