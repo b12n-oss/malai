@@ -23,7 +23,7 @@
 
 (def NONE ::NONE)
 
-;; malai: present only in malai. malai.core checks it to refuse loading over
+;; Malai: present only in Malai. malai.core checks it to refuse loading over
 ;; the original Specter, which shares these namespace names.
 (def ^:no-doc malai-marker true)
 

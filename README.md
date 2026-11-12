@@ -96,7 +96,7 @@ project.
 has, and it throws when the loaded copy is the original:
 
 ```
-malai: com.rpl.specter was loaded from the original Specter, not malai. Remove com.rpl/specter from your dependencies; malai provides those namespaces.
+Malai: com.rpl.specter was loaded from the original Specter, not Malai. Remove com.rpl/specter from your dependencies; Malai provides those namespaces.
 ```
 
 On Jolt the check reads `com/rpl/specter/impl.cljc` before loading it,

@@ -9,8 +9,8 @@
             [malai.version :as version]))
 
 (defn- clash-error []
-  (ex-info (str "malai: com.rpl.specter was loaded from the original Specter, not malai. "
-                "Remove com.rpl/specter from your dependencies; malai provides those namespaces.")
+  (ex-info (str "Malai: com.rpl.specter was loaded from the original Specter, not Malai. "
+                "Remove com.rpl/specter from your dependencies; Malai provides those namespaces.")
            {:malai/version version/version}))
 
 (defn- check-impl-source!
