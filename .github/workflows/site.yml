@@ -5,13 +5,12 @@ name: Site
 # this project's own: docs/, docs/site.edn, the base path below and the
 # assertions in docs/check-site.sh.
 #
-# Manual runs only while the repo is private, since every run is billed.
-# When it goes public, restore:
-#   push:
-#     branches: [main]
-#   pull_request:
+# Builds on every pull request, and publishes to GitHub Pages from main.
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
