@@ -1,6 +1,9 @@
 name: CI
 
-on: [push, pull_request]
+# Manual runs only while the repo is private, since every run is billed.
+# Restore `push` and `pull_request` when it goes public.
+on:
+  workflow_dispatch:
 
 jobs:
 

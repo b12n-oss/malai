@@ -32,6 +32,8 @@ applies on Jolt.
 - [Specter on Jolt](jolt.md): how paths are cached on Jolt, timings from
   `jolt bench`, using it at the REPL, `jolt build` binaries, and which Jolt
   Malai needs.
+- [Contributing](contributing.md): which changes belong here and which go
+  upstream, running the tests, and how Jolt branches are written.
 
 ## Using Malai
 
