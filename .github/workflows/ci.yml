@@ -1,40 +1,48 @@
 name: CI
 
+# Malai's tests, run through Jolt's task runner as on a workstation:
+# `jolt verify` runs the suite on Jolt, then on the JVM with Leiningen, and
+# `jolt test:cljs` runs upstream Specter's ClojureScript tests. Babashka is
+# not needed.
+#
 # Manual runs only while the repo is private, since every run is billed.
-# Restore `push` and `pull_request` when it goes public.
+# When it goes public, restore:
+#   push:
+#     branches: [main]
+#   pull_request:
+
 on:
   workflow_dispatch:
 
-jobs:
+permissions:
+  contents: read
 
+jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
+
+      # The oldest Jolt Malai supports, the same as :jolt/min-version in deps.edn.
+      - uses: jlt-commons/setup-jolt@v1
         with:
-          fetch_depth: 0
+          version: "0.8.27"
 
-      - name: Setup Babashka
-        uses: turtlequeue/setup-babashka@v1.3.0
+      - uses: actions/setup-java@v5
         with:
-          babashka-version: 0.7.8
+          distribution: temurin
+          java-version: "21"
 
-      - name: Prepare java
-        uses: actions/setup-java@v2
+      - uses: DeLaGuardo/setup-clojure@13.6.1
         with:
-          distribution: 'zulu'
-          java-version: '8'
+          lein: 2.12.0
 
-      - name: Install clojure tools
-        uses: DeLaGuardo/setup-clojure@4.0
+      - uses: actions/setup-node@v6
         with:
-          lein: 2.9.1
+          node-version: "22"
 
-      - name: Run clj tests
-        run: bb test:clj
+      - name: Jolt and JVM suites
+        run: jolt verify
 
-      - name: Run cljs tests
-        run: bb test:cljs
-
-      - name: Run babashka tests
-        run: bb test:bb
+      - name: ClojureScript suite
+        run: jolt test:cljs

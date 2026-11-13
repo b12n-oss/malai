@@ -1,8 +1,8 @@
 # Specter on the JVM, babashka and Jolt
 
-The same Specter code runs on all three hosts, and gives the same answers:
-upstream Specter's own test suite, plus Malai's, passes on the JVM (through
-`lein test`), on babashka and on Jolt. What differs is how each host runs it,
+The same Specter code runs on all three hosts, and gives the same answers.
+Upstream Specter tests the JVM and babashka, and Malai runs that suite, plus
+its own tests, on Jolt and on the JVM. What differs is how each host runs it,
 and that decides how fast a path is and what it costs to start.
 
 ## Side by side

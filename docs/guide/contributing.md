@@ -19,22 +19,25 @@ Specter.
 
 - Jolt 0.8.27 or newer on your `PATH`
 - Leiningen and a JDK, for the JVM suite
-- babashka, for the babashka suite
+- Node, only for upstream's ClojureScript tests
+- Python 3, only for previewing the docs site
 
-The tasks live in `bb.edn` and run as `jolt <task>`. `jolt info` lists every
-one of them.
+The tasks live in `bb.edn` and run as `jolt <task>`; babashka isn't needed.
+`jolt info` lists every one of them.
 
 ## Running the tests
 
 ```sh
-jolt verify        # the gate: Jolt, then the JVM, then babashka
+jolt verify        # the gate: Jolt, then the JVM
 jolt test          # only the Jolt suite
+jolt test:cljs     # upstream's ClojureScript tests
 jolt smoke:build   # builds a small program with `jolt build`, about 15 s per build
 ```
 
-Run `jolt verify` before you open a pull request. All three suites run
-upstream Specter's tests as well as Malai's, and each one has to pass, since
-a Jolt change must leave the JVM and babashka exactly as they were.
+Run `jolt verify` before you open a pull request. Both suites run upstream
+Specter's tests as well as Malai's, and both have to pass, since a Jolt
+change must leave the JVM exactly as it was. CI runs `jolt verify` and
+`jolt test:cljs`.
 
 `jolt bench` prints timings, and `jolt metrics` prints a code-metrics report.
 Neither ever fails.
@@ -52,7 +55,7 @@ Neither ever fails.
   issue in a one-line comment next to the branch. When a Jolt release fixes
   it, the branch goes.
 - Tests that only make sense on Jolt go in `.jolt` files, which Leiningen
-  and babashka never load. Tests for every host go in `.clj` files.
+  never loads. Tests for every host go in `.clj` files.
 
 ## The docs site
 
@@ -62,7 +65,7 @@ The pages under `docs/guide` build into a site with
 ```sh
 jolt site:build                            # into _site/
 BASE_PATH=/malai bash docs/check-site.sh   # the checks CI runs on it
-jolt site:serve                            # preview at /malai/, needs bb
+jolt site:serve                            # preview at /malai/, needs python3
 ```
 
 The site tasks look for the engine in `$JLT_DOCS_ENGINE`, then

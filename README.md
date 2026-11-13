@@ -10,14 +10,13 @@ also `malai.core`, which re-exports the same API under Malai's own name.
 
 Specter is Nathan Marz's library, from Red Planet Labs, and everything good
 about it is theirs. Malai adds `#?(:jolt ...)` reader branches next to the
-`:bb` ones Specter already had, plus a few workarounds for places where Jolt
-still differs from the JVM. On the JVM, ClojureScript and babashka the code
-behaves exactly as upstream's.
+`:bb` ones Specter already had, and caches paths per call site on Jolt. On
+the JVM, ClojureScript and babashka the code is upstream's, unchanged.
 
 **Which one do you need?** On the JVM, keep using `com.rpl/specter` from
 Clojars. In a babashka script, Specter loads from source as it is, with paths
 rebuilt on every call. On Jolt, use Malai, which caches paths per call site:
-a nested `transform` takes 7.20 µs here against 21.48 µs under babashka and
+a nested `transform` takes 6.84 µs here against 21.48 µs under babashka and
 2.58 µs on the JVM. [Specter on the JVM, babashka and
 Jolt](docs/guide/comparison.md) compares the three side by side.
 
@@ -108,18 +107,18 @@ copy comes first, so on Jolt the sign of the wrong one is
 
 ## Development
 
-Tasks run through Jolt, which reads `bb.edn`:
+Tasks run through Jolt, which reads `bb.edn`. Babashka isn't needed:
 
 | Task | What it does |
 |---|---|
 | `jolt test` | The suite on Jolt: upstream Specter's tests plus `test/malai/*` |
 | `jolt test:clj` | The same suite on the JVM, through `lein test` |
-| `jolt test:bb` | The same suite on babashka (hands off to `bb`) |
-| `jolt verify` | All three, stopping at the first failure |
+| `jolt test:cljs` | Upstream's ClojureScript tests, through Leiningen and Node |
+| `jolt verify` | `test`, then `test:clj`, stopping at the first failure |
 | `jolt bench` | Timings of cached and uncached paths, warm and cold (report only) |
 | `jolt smoke:build` | Builds a test binary with `jolt build`, default and `--closed-world`, and checks its output |
 | `jolt site:build` | Builds this project's docs site (`docs/guide`, `docs/site.edn`) into `_site/` with [jlt-commons/docs-engine](https://github.com/jlt-commons/docs-engine) |
-| `jolt site:serve` | Builds and serves it locally at `/malai/` (first free port from 3000, or `site:serve PORT`); `site:clean` deletes `_site/` |
+| `jolt site:serve` | Builds it and serves `_site/` locally at `/malai/` with Python's static file server (first free port from 3000, or `site:serve PORT`); `site:clean` deletes `_site/` |
 | `jolt metrics` | A jolt-metrics report (also `metrics:edn`, `metrics:html`); findings never fail it |
 | `jolt info` | Every task with its description |
 

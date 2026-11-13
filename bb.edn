@@ -1,12 +1,11 @@
-;; Tasks for malai. Run them as `jolt <task>` (jolt reads bb.edn); `bb <task>`
-;; works too. `jolt info` lists them.
+;; Tasks for Malai. Run them as `jolt <task>`: Jolt reads bb.edn. Malai's
+;; tooling runs on Jolt alone; babashka is not needed. `jolt info` lists them.
 {:paths ["src/clj"]
  :tasks
  {:requires ([clojure.edn :as edn] [clojure.string :as str] [babashka.fs :as fs] [babashka.process :as process])
   :init (do
           ;; $JOLT wins, then jolt on PATH
           (defn jolt-bin [] (or (System/getenv "JOLT") "jolt"))
-          (def under-bb? (some? (System/getProperty "babashka.version")))
           ;; The docs site is rendered by jlt-commons/docs-engine, which lives in
           ;; its own repo; site:* tasks delegate to it and only preview locally.
           ;; Found via $JLT_DOCS_ENGINE (or $DOCS_ENGINE), then
@@ -22,15 +21,11 @@
                    (filter (fn [d] (fs/exists? (fs/file d "bb.edn"))))
                    first)))
           ;; The engine's build and clean run under jolt as `jolt run <task>`
-          ;; (bare `jolt build` is jolt's own native build); its serve needs bb,
-          ;; which bundles http-kit. Proxy vars cleared: the engine fetches
-          ;; markdown-clj and selmer on first run.
+          ;; (bare `jolt build` is jolt's own native build). Proxy vars cleared:
+          ;; the engine fetches markdown-clj and selmer on first run.
           (defn site-task [task & args]
             (if-let [engine (docs-engine-dir)]
-              (let [cmd (cond (= task "serve") ["bb" task]
-                              under-bb? ["bb" task]
-                              :else [(jolt-bin) "run" task])
-                    argv (into cmd (cons (str (fs/canonicalize ".")) (remove nil? args)))
+              (let [argv (into [(jolt-bin) "run" task] (cons (str (fs/canonicalize ".")) (remove nil? args)))
                     res (apply process/shell {:dir (str engine) :continue true
                                               :extra-env {"HTTPS_PROXY" "" "https_proxy" ""
                                                           "HTTP_PROXY" "" "http_proxy" ""}}
@@ -52,7 +47,18 @@
                    (catch Exception _ false)
                    (finally (.close s)))))
           (defn free-port [base span]
-            (first (filter can-bind? (range base (inc (+ base span)))))))
+            (first (filter can-bind? (range base (inc (+ base span))))))
+          ;; The site's URLs all start with /malai/, so the static server's root
+          ;; holds one link, malai -> _site, and the pages load as they will
+          ;; when published.
+          (defn serve-site [port]
+            (site-task "build")
+            (let [root "target/site-root"]
+              (fs/delete-tree root)
+              (fs/create-dirs root)
+              (fs/create-sym-link (fs/path root "malai") (fs/canonicalize "_site"))
+              (println (str "Serving the docs site at http://localhost:" port "/malai/ (Ctrl-C stops it)"))
+              (shell "python3" "-m" "http.server" (str port) "--bind" "127.0.0.1" "--directory" root))))
 
   info {:doc "List the tasks with what each one does"
         :task (let [tasks (:tasks (edn/read-string (slurp "bb.edn")))]
@@ -70,23 +76,10 @@
   test:cljs {:doc "Run cljs tests with leiningen (upstream's task)"
              :task (shell "lein doo node test-build once")}
 
-  test:bb {:doc "Run the suite on babashka (upstream's task); under jolt it hands off to bb"
-           :extra-paths ["test"]
-           :extra-deps {org.clojure/test.check {:mvn/version "0.9.0"}
-                        io.github.cognitect-labs/test-runner
-                        {:git/tag "v0.5.0" :git/sha "b3fd0d2"}
-                        org.clojure/tools.namespace {:git/url "https://github.com/babashka/tools.namespace"
-                                                     :git/sha "3625153ee66dfcec2ba600851b5b2cbdab8fae6c"}}
-           :task (if under-bb?
-                   (apply (requiring-resolve 'cognitect.test-runner/-main)
-                          "-d" "test"
-                          *command-line-args*)
-                   (apply shell "bb test:bb" *command-line-args*))}
-
-  verify {:doc "The gate: test (Jolt), test:clj (JVM), test:bb (babashka); stops at the first failure"
-          :task (doseq [t ["test" "test:clj" "test:bb"]]
+  verify {:doc "The gate: test (Jolt), then test:clj (JVM); stops at the first failure"
+          :task (doseq [t ["test" "test:clj"]]
                   (println (str "== " t))
-                  (shell (if under-bb? "bb" (jolt-bin)) t))}
+                  (shell (jolt-bin) t))}
 
   bench {:doc "Timings of Specter paths on Jolt, cached and not, warm and cold (bench/malai/bench.clj; report only)"
          :task (shell (jolt-bin) "-M:bench")}
@@ -112,7 +105,7 @@
               :task (site-task "build")}
   ;; No port given: scan from 3000 for a free one. A port you name is used
   ;; strictly and refused when busy, never swapped for another.
-  site:serve {:doc "Build the docs site and serve it locally at /malai/; first free port from 3000, or site:serve PORT (refused if busy); needs bb"
+  site:serve {:doc "Build the docs site and serve _site/ locally at /malai/ with a static file server (python3); first free port from 3000, or site:serve PORT (refused if busy)"
               :task (let [requested (first *command-line-args*)
                           port (when requested (parse-long requested))]
                       (when (and requested (not (and port (<= 1 port 65535))))
@@ -120,12 +113,12 @@
                         (System/exit 1))
                       (if port
                         (if (can-bind? port)
-                          (site-task "serve" (str port))
+                          (serve-site port)
                           (do (println (str "site:serve: port " port " is busy; pick another, or drop the argument to scan from 3000"))
                               (System/exit 1)))
                         (if-let [p (free-port 3000 100)]
                           (do (println (str "site:serve: using free port " p))
-                              (site-task "serve" (str p)))
+                              (serve-site p))
                           (do (println "site:serve: no free port in 3000..3100")
                               (System/exit 1)))))}
   site:clean {:doc "Delete the _site/ build output"
