@@ -4,14 +4,11 @@ name: CI
 # `jolt verify` runs the suite on Jolt, then on the JVM with Leiningen, and
 # `jolt test:cljs` runs upstream Specter's ClojureScript tests. Babashka is
 # not needed.
-#
-# Manual runs only while the repo is private, since every run is billed.
-# When it goes public, restore:
-#   push:
-#     branches: [main]
-#   pull_request:
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:

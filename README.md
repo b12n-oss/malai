@@ -20,10 +20,6 @@ a nested `transform` takes 6.84 µs here against 21.48 µs under babashka and
 2.58 µs on the JVM. [Specter on the JVM, babashka and
 Jolt](docs/guide/comparison.md) compares the three side by side.
 
-> [!NOTE]
-> Malai is private for now. The coordinates below work for people with access
-> to `b12n-oss/malai`.
-
 ## Install (Jolt)
 
 Add it to `deps.edn` as a git dependency. It needs Jolt 0.8.27 or newer,

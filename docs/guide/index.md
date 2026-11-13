@@ -41,5 +41,5 @@ applies on Jolt.
   `com.rpl/specter` from Clojars, and never put both in one project: they
   provide the same namespaces, and whichever loads first wins. `malai.core`
   refuses to load over the original Specter with a clear error.
-- Malai is private for now and licensed under the Apache License 2.0, the
-  same as Specter. Specter is Nathan Marz's library, from Red Planet Labs.
+- Malai is licensed under the Apache License 2.0, the same as Specter.
+  Specter is Nathan Marz's library, from Red Planet Labs.
